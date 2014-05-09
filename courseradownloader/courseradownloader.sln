@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "courseradownloader", "courseradownloader.csproj", "{EC5A92BA-C24A-4F10-806C-8C2974DB3F64}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EC5A92BA-C24A-4F10-806C-8C2974DB3F64}.Debug|x86.ActiveCfg = Debug|x86
+		{EC5A92BA-C24A-4F10-806C-8C2974DB3F64}.Debug|x86.Build.0 = Debug|x86
+		{EC5A92BA-C24A-4F10-806C-8C2974DB3F64}.Release|x86.ActiveCfg = Release|x86
+		{EC5A92BA-C24A-4F10-806C-8C2974DB3F64}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
