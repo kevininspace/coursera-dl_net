@@ -4,7 +4,8 @@ from os import path
 from six import print_, PY2
 from six.moves.urllib.parse import unquote, urlparse, urlsplit
 
-
+#DONE
+===
 def filename_from_header(header):
     try:
         cd = header['Content-Disposition']
@@ -16,6 +17,8 @@ def filename_from_header(header):
         return sanitise_filename(g)
     except Exception:
         return ''
+===
+
 
 
 def filename_from_url(url):
@@ -47,6 +50,9 @@ def filename_from_url(url):
     return sanitise_filename(fname)
 
 
+
+#DONE
+===
 def clean_url(url):
     if not url:
         return None
@@ -57,8 +63,12 @@ def clean_url(url):
         url = "http://" + url
 
     return url
+===
 
 
+
+#DONE
+===
 def sanitise_filename(fileName):
     # ensure a clean, valid filename (arg may be both str and unicode)
 
@@ -85,7 +95,7 @@ def sanitise_filename(fileName):
     s = fn[:max - len(ext)] + ext
 
     return s
-
+===
 
 def trim_path(pathname, max_path_len=255, min_len=5):
     """

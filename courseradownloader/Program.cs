@@ -92,7 +92,7 @@ namespace courseradownloader
             for (int i = 0; i < course_names.Length; i++)
             {
                 Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
-                d.download_course(course_names[i], dest_dir, reverse, gzip_courses);
+                d.download_course(course_names[i], dest_dir, true, gzip_courses);
             }
         }
 

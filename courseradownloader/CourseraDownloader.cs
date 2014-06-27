@@ -135,7 +135,7 @@ namespace courseradownloader
             //download the standard pages
             Console.WriteLine(" - Downloading lecture/syllabus pages");
 
-            download(string.Format(HOME_URL, cname), target_dir:course_dir, target_fname:"index.html");
+            download(string.Format(HOME_URL, cname), target_dir: course_dir, target_fname: "index.html");
 
             /*
         self.download(self.HOME_URL %
@@ -204,27 +204,30 @@ namespace courseradownloader
         private void download(string url, string target_dir = ".", string target_fname = null)
         {
             //get the headers
-            string clenString = get_headers(url, "Content-Length");
+            Dictionary<string, string> headers = get_headers(url);
 
+            string clenString;
+            headers.TryGetValue("Content-Length", out clenString);
             //get the content length (if present)
             //Will return 0 if can't get value
+
             int clen;
             int.TryParse(clenString, out clen);
 
             string fname;
-            if (!string.IsNullOrEmpty(target_fname))
+            if (!headers.Any())
             {
-                fname = target_fname;
+                //fname = headers);
             }
-            else if (!string.IsNullOrEmpty(filename_from_header(headers)))
+            else if (!string.IsNullOrEmpty(util.filename_from_header(headers)))
             {
-                fname = filename_from_header(headers);
+                fname = util.filename_from_header(headers);
             }
             else
             {
-                fname = filename_from_url(url);
+                fname = util.filename_from_url(url);
             }
-            
+
             /*"""
 
         
@@ -345,7 +348,7 @@ namespace courseradownloader
 
             r.Close();
             return headers;
-            
+
         }
 
         /// <summary>
@@ -370,7 +373,7 @@ namespace courseradownloader
             }
             else
             {
-                
+
                 if (htmlDoc.DocumentNode != null)
                 {
                     //# extract the weekly classes
@@ -400,7 +403,7 @@ namespace courseradownloader
                             //get all the classes for the week
                             HtmlNode ul = week.NextSibling;
                             HtmlNodeCollection lis = ul.SelectNodes("li");
-                            
+
                             //for each class (= lecture)
                             Dictionary<string, List<string>> weekClasses = new Dictionary<string, List<string>>();
                             foreach (HtmlNode li in lis)
@@ -426,7 +429,7 @@ namespace courseradownloader
                                 foreach (HtmlNode classResource in classResources)
                                 {
                                     //get the hyperlink itself
-                                    string h = util.clean_url(classResource.GetAttributeValue("href",""));
+                                    string h = util.clean_url(classResource.GetAttributeValue("href", ""));
                                     if (string.IsNullOrEmpty(h))
                                     {
                                         continue;
@@ -441,35 +444,50 @@ namespace courseradownloader
                                     else
                                     {
                                         //Dont set a filename here, that will be inferred from the week titles
-                                        
+
                                         resourceLinks.Add(h);
                                     }
                                 }
 
                                 //check if the video is included in the resources, if not, try do download it directly
                                 string containsMp4 = resourceLinks.FirstOrDefault(s => s.Contains(".mp4"));
-                                if(string.IsNullOrEmpty(containsMp4))
+                                if (string.IsNullOrEmpty(containsMp4))
                                 {
                                     HtmlNode ll = li.SelectSingleNode("./a[contains(concat(' ', @class, ' '), ' lecture-link ')]");
                                     string lurl = util.clean_url(ll.GetAttributeValue("data-modal-iframe", ""));
                                     try
                                     {
-                                        //string page = get_page(lurl);
-                                        HtmlDocument bb = new HtmlDocument();
-                                        bb.Load(lurl);
-                                        /*try:
-                        pg = self.get_page(lurl)
-                        bb = BeautifulSoup(pg, self.parser)
-                        vobj = bb.find('source', type="video/mp4")
+                                        //HttpWebResponse httpWebResponse = get_response(lurl);
+                                        //string html = new WebClient().DownloadString(lurl);
+                                        WebClient wc = new WebClient();
+                                        wc.DownloadStringCompleted += WcOnDownloadStringCompleted;
+                                        wc.DownloadStringAsync(new Uri(lurl));
+                                        System.Threading.Thread.Sleep(3000);
+                                        wc.CancelAsync();
+                                        
 
-                        if not vobj:
-                            print_(
-                                " Warning: Failed to find video for %s" % className)
-                        else:
-                            vurl = clean_url(vobj['src'])
-                            # build the matching filename
-                            fn = className + ".mp4"
-                            resourceLinks.append((vurl, fn))
+                                        string page = get_page(lurl);
+                                        HtmlDocument bb = new HtmlDocument();
+
+                                        bb.LoadHtml(lurl);
+
+                                        //string page = get_page(lurl);
+                                        //HtmlWeb bb = new HtmlWeb();
+                                        //HtmlDocument doc = bb.Load(lurl);
+                                        HtmlNode selectSingleNode = bb.DocumentNode.SelectSingleNode("div"); //"[contains(concat(' ', @type, ' '), 'video/mp4')]");
+                                        if (selectSingleNode.OuterHtml.Length < 1)
+                                        {
+                                            Console.WriteLine(string.Format(" Warning: Failed to find video for {0}", className));
+                                        }
+                                        else
+                                        {
+                                            //                                            vurl = clean_url(vobj['src'])
+                                            //# build the matching filename
+                                            //fn = className + ".mp4"
+                                            //resourceLinks.append((vurl, fn))
+                                        }
+                                        /*try:
+
 
                     except requests.exceptions.HTTPError as e:
                         # sometimes there is a lecture without a vidio (e.g.,
@@ -478,10 +496,11 @@ namespace courseradownloader
                             " Warning: failed to open the direct video link %s: %s" % (lurl, e))
                                          */
                                     }
-                                    catch (Exception)
+                                    catch (Exception e)
                                     {
-                                        
-                                        throw;
+                                        // sometimes there is a lecture without a vidio (e.g.,
+                                        // genes-001) so this can happen.
+                                        Console.WriteLine(string.Format(" Warning: failed to open the direct video link {0}: {1}", lurl, e));
                                     }
                                 }
                                 weekClasses.Add(className, resourceLinks);
@@ -493,6 +512,24 @@ namespace courseradownloader
                 }
             }
             return null;
+        }
+
+        private void WcOnDownloadStringCompleted(object sender, DownloadStringCompletedEventArgs downloadStringCompletedEventArgs)
+        {
+            string result = downloadStringCompletedEventArgs.Result;
+        }
+
+        private string get_page(string courseUrl, Dictionary<string, string> headers = null)
+        {
+            HttpWebResponse r = get_response(url: courseUrl, headers: headers);
+            Stream responseStream = r.GetResponseStream();
+            //Encoding encoding = System.Text.Encoding.GetEncoding(r.ContentEncoding);
+            StreamReader reader = new StreamReader(responseStream);
+            string page = reader.ReadToEnd();
+            reader.Close();
+            responseStream.Close();
+            r.Close();
+            return page;
         }
 
         private string trim_path_part(string weekTopic)
@@ -508,35 +545,20 @@ namespace courseradownloader
             }
         }
 
-        /// <summary>
-        /// Get the content
-        /// </summary>
-        /// <param name="courseUrl"></param>
-        private string get_page(string courseUrl)
-        {
-            HttpWebResponse r = get_response(courseUrl);
-            Stream responseStream = r.GetResponseStream();
-            //Encoding encoding = System.Text.Encoding.GetEncoding(r.ContentEncoding);
-            StreamReader reader = new StreamReader(responseStream);
-            string page = reader.ReadToEnd();
-            reader.Close();
-            responseStream.Close();
-            r.Close();
-            return page;
-        }
+
 
         /// <summary>
         /// Get the response
         /// </summary>
         /// <param name="url"></param>
-        private HttpWebResponse get_response(string url, int retries = 3, bool stream = false)
+        private HttpWebResponse get_response(string url, int retries = 3, bool stream = false, Dictionary<string, string> headers = null)
         {
             HttpWebResponse httpWebResponse = null;
             for (int i = 0; i < retries; i++)
             {
                 try
                 {
-                    httpWebResponse = GetHttpWebResponse(url);
+                    httpWebResponse = GetHttpWebResponse(url, headers);
                     if (httpWebResponse == null || httpWebResponse.StatusCode == HttpStatusCode.NotFound)
                     {
                         throw new Exception();
@@ -613,7 +635,7 @@ namespace courseradownloader
             //CookieContainer postCookies = new CookieContainer(); //use new cookiejar
             Cookie crsfCookie = new Cookie("csrftoken", cookie.Value, "/", ".coursera.org");
 
-            HttpWebResponse postResponse = GetHttpWebResponse(LOGIN_URL + postData, method:"POST", headers:newHeader, cookie: crsfCookie); //, cookiejar);
+            HttpWebResponse postResponse = GetHttpWebResponse(LOGIN_URL + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
             if (postResponse.StatusCode == HttpStatusCode.Unauthorized)
             {
                 postResponse.Close();
@@ -630,12 +652,21 @@ namespace courseradownloader
             }
         }
 
-        private HttpWebResponse GetHttpWebResponse(string url, Dictionary<string,string> headers = null, string method = "GET", Cookie cookie = null, bool allowRedirect = true)
+        private HttpWebResponse GetHttpWebResponse(string url, Dictionary<string, string> headers = null, string method = "GET", Cookie cookie = null, bool allowRedirect = true)
         //, CookieContainer cookiejar)
         {
 
+            /* WHEN I GET IN TROUBLE, RUN THIS
+            HttpWebRequest myHttpWebRequest2 = (HttpWebRequest)WebRequest.Create(url);
+            myHttpWebRequest2.Connection = null;
+            // Assign the response object of 'HttpWebRequest' to a 'HttpWebResponse' variable.
+            HttpWebResponse myHttpWebResponse2 = (HttpWebResponse)myHttpWebRequest2.GetResponse();
+            // Release the resources held by response object.
+            myHttpWebResponse2.Close();
+             */
+
             HttpWebRequest postRequest = (HttpWebRequest)WebRequest.Create(url);
-            postRequest.Timeout = TIMEOUT * 1000;
+            postRequest.Timeout = TIMEOUT * 10000000;
             postRequest.ContentType = "application/x-www-form-urlencoded";
             //postRequest.ContentLength = requestData.Length; //65
 
@@ -656,7 +687,7 @@ namespace courseradownloader
             }
 
             postRequest.CookieContainer = cookiejar;
-            
+
             postRequest.Method = method;
 
             postRequest.AllowAutoRedirect = allowRedirect;

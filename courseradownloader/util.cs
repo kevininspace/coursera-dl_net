@@ -1,40 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace courseradownloader
 {
     public static class util
     {
-
-        private static string filename_from_header(Dictionary<string, string> headers)
+        internal static string filename_from_header(Dictionary<string, string> headers)
         {
             try
             {
                 string cd = headers["Content-Disposition"];
-                Regex.Match(cd, "atachment/; filename=/"(.*?)/"")
-                ;
+                Match m = Regex.Match(cd, "atachment; filename=\"(.*?)\"");
+                Group g = m.Groups[0];
+                string gDecode = g.Value;
+                if (gDecode.Contains("%"))
+                {
+                    gDecode = HttpUtility.UrlDecode(g.Value);
+                }
+                return sanitise_filename(gDecode);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                
-                throw;
+                return "";
             }
-            /*
-             * def filename_from_header(header):
-     try:
-         cd = header['Content-Disposition']
-         pattern = 'attachment; filename="(.*?)"'
-         m = re.search(pattern, cd)
-         g = m.group(1)
-         if "%" in g:
-             g = unquote(g)
-         return sanitise_filename(g)
-     except Exception:
-         return ''
-             */
         }
 
 
@@ -82,6 +75,49 @@ namespace courseradownloader
             UriBuilder uriBuilder = new UriBuilder(url){Scheme = Uri.UriSchemeHttp};
 
             return uriBuilder.Uri.AbsoluteUri;
+        }
+
+        public static string filename_from_url(string url)
+        {
+            // parse the url into its components
+            Uri u = new Uri(url);
+
+            // split the path into parts and unquote
+            string[] strings = u.AbsolutePath.Split('/');
+            List<string> parts = new List<string>();
+            foreach (string x in strings)
+            {
+                parts.Add(HttpUtility.UrlDecode(x));
+            }
+            
+            // take the last component as filename
+            string fname = parts.Last();
+
+            // if empty, url ended with a trailing slash
+            // so join up the hostnam/path  and use that as a filename
+            if (fname.Length < 1)
+            {
+                string s = u.Host + u.AbsolutePath;
+                fname = s.Replace('/', '_');
+            }
+            else
+            {
+                // unquoting could have cuased slashes to appear again
+                // split and take the last element if so
+                fname = fname.Split('/').Last();
+            }
+
+            
+            // add an extension if none
+            string ext = Path.GetExtension(fname);
+
+            if( ext.Length < 1 || ext.Length > 5)
+            {
+                fname += ".html";
+            }
+
+            // remove any illegal chars and return
+            return sanitise_filename(fname);
         }
     }
 }
