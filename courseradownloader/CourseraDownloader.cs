@@ -40,8 +40,7 @@ namespace courseradownloader
         // http://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
         string DEFAULT_PARSER = "html.parser";
 
-        // how long to try to open a URL before timing out
-        int TIMEOUT = 30;
+
         private string Username;
         private string Password;
         private string Parser;
@@ -49,7 +48,7 @@ namespace courseradownloader
         private int Max_path_part_len;
         private string Gzip_courses;
         private string[] Wk_filter;
-        private CookieContainer cookiejar;
+        private readonly WebConnectionStuff _webConnectionStuff;
 
         public CourseraDownloader(string username, string password, string proxy, string parser, string ignorefiles, int mppl, string gzipCourses, string wkfilter)
         {
@@ -76,6 +75,7 @@ namespace courseradownloader
                 {
                     Wk_filter = wkfilter.Split(',');
                 }
+                _webConnectionStuff = new WebConnectionStuff(this);
             }
             catch (Exception e)
             {
@@ -87,6 +87,31 @@ namespace courseradownloader
         public string Proxy { get; set; }
 
         public object Session { get; set; }
+
+        public WebConnectionStuff WebConnectionStuff
+        {
+            get { return _webConnectionStuff; }
+        }
+
+
+
+        public string Username1
+        {
+            set { Username = value; }
+            get { return Username; }
+        }
+
+        public string Password1
+        {
+            set { Password = value; }
+            get { return Password; }
+        }
+
+        public string LoginUrl
+        {
+            set { LOGIN_URL = value; }
+            get { return LOGIN_URL; }
+        }
 
         /// <summary>
         /// Download all the contents (quizzes, videos, lecture notes, ...) of the course to the given destination directory (defaults to .)
@@ -135,13 +160,19 @@ namespace courseradownloader
             //download the standard pages
             Console.WriteLine(" - Downloading lecture/syllabus pages");
 
-            download(string.Format(HOME_URL, cname), target_dir: course_dir, target_fname: "index.html");
+            download(string.Format(HOME_URL, cname), course_dir, "index.html");
+            download(string.Format(course_url), course_dir, "lectures.html");
 
+            try
+            {
+                download_about(cname, course_dir);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Warning: failed to download about file: {0}", e.Message);
+            }
             /*
-        self.download(self.HOME_URL %
-                      cname, target_dir=course_dir, target_fname="index.html")
-        self.download(course_url,
-                      target_dir=course_dir, target_fname="lectures.html")
+
         try:
             self.download_about(cname, course_dir)
         except Exception as e:
@@ -204,7 +235,7 @@ namespace courseradownloader
         private void download(string url, string target_dir = ".", string target_fname = null)
         {
             //get the headers
-            Dictionary<string, string> headers = get_headers(url);
+            Dictionary<string, string> headers = _webConnectionStuff.get_headers(url);
 
             string clenString;
             headers.TryGetValue("Content-Length", out clenString);
@@ -323,32 +354,6 @@ namespace courseradownloader
         except Exception as e:
             print_("Failed to download url %s to %s: %s" % (url, filepath, e))
              */
-        }
-
-        private string get_headers(string url, string headerName)
-        {
-            Dictionary<string, string> headers = get_headers(url);
-            string headerValue;
-            headers.TryGetValue(headerName, out headerValue);
-            return headerValue;
-
-        }
-
-        /// <summary>
-        /// Get the headers
-        /// </summary>
-        /// <param name="url"></param>
-        /// <returns></returns>
-        private Dictionary<string, string> get_headers(string url)
-        {
-            HttpWebResponse r = get_response(url, stream: true);
-            WebHeaderCollection headerCollection = r.Headers;
-
-            Dictionary<string, string> headers = headerCollection.AllKeys.ToDictionary(key => key, key => headerCollection[key]);
-
-            r.Close();
-            return headers;
-
         }
 
         /// <summary>
@@ -521,7 +526,7 @@ namespace courseradownloader
 
         private string get_page(string courseUrl, Dictionary<string, string> headers = null)
         {
-            HttpWebResponse r = get_response(url: courseUrl, headers: headers);
+            HttpWebResponse r = _webConnectionStuff.GetResponse(url: courseUrl, headers: headers);
             Stream responseStream = r.GetResponseStream();
             //Encoding encoding = System.Text.Encoding.GetEncoding(r.ContentEncoding);
             StreamReader reader = new StreamReader(responseStream);
@@ -546,199 +551,12 @@ namespace courseradownloader
         }
 
 
-
-        /// <summary>
-        /// Get the response
-        /// </summary>
-        /// <param name="url"></param>
-        private HttpWebResponse get_response(string url, int retries = 3, bool stream = false, Dictionary<string, string> headers = null)
-        {
-            HttpWebResponse httpWebResponse = null;
-            for (int i = 0; i < retries; i++)
-            {
-                try
-                {
-                    httpWebResponse = GetHttpWebResponse(url, headers);
-                    if (httpWebResponse == null || httpWebResponse.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        throw new Exception();
-                    }
-                    return httpWebResponse;
-
-                }
-                catch (Exception)
-                {
-                    Console.WriteLine(string.Format("Warning: Retrying to connect url: {0}", url));
-                }
-            }
-            return httpWebResponse;
-
-        }
-
-
-        /// <summary>
-        /// Login into coursera and obtain the necessary session cookies
-        /// </summary>
-        /// <param name="courseName"></param>
-        public void login(string courseName)
-        {
-            string url = lecture_url_from_name(courseName);
-            cookiejar = new CookieContainer();
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
-            webRequest.CookieContainer = cookiejar;
-            webRequest.Timeout = TIMEOUT * 1000;
-            //webRequest.Proxy = new WebProxy(Proxy);
-
-            HttpWebResponse webResponse = null;
-            Cookie cookie = null;
-            try
-            {
-                webResponse = (HttpWebResponse)webRequest.GetResponse();
-
-                //Check 404
-                if (webResponse.StatusCode == HttpStatusCode.NotFound)
-                {
-                    webResponse.Close();
-                    throw new Exception(string.Format("Unknown class {0}", courseName));
-                }
-
-                webResponse.Close();
-
-                CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(url));
-                cookie = cookieCollection["csrf_token"];
-                if (cookie == null)
-                {
-                    throw new Exception("Failed to find csrf cookie");
-                }
-
-            }
-            catch (WebException e)
-            {
-                //TODO: What is this doing here?
-                if (e.Status == WebExceptionStatus.ProtocolError)
-                {
-                    webResponse = (HttpWebResponse)e.Response;
-                }
-            }
-
-
-            // call the authenticator url
-            StringBuilder postData = new StringBuilder();
-            postData.Append("?email=" + HttpUtility.UrlEncode(Username) + "&");
-            postData.Append("password=" + HttpUtility.UrlEncode(Password));
-            //byte[] requestData = Encoding.ASCII.GetBytes(postData.ToString());
-
-            Dictionary<string, string> newHeader = new Dictionary<string, string>
-            {
-                {"X-CSRFToken", cookie.Value}
-            };
-            //CookieContainer postCookies = new CookieContainer(); //use new cookiejar
-            Cookie crsfCookie = new Cookie("csrftoken", cookie.Value, "/", ".coursera.org");
-
-            HttpWebResponse postResponse = GetHttpWebResponse(LOGIN_URL + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
-            if (postResponse.StatusCode == HttpStatusCode.Unauthorized)
-            {
-                postResponse.Close();
-                throw new Exception("Invalid username or password");
-            }
-
-            // check if we managed to login
-            CookieCollection loginCookieCollection = cookiejar.GetCookies(new Uri("https://class.coursera.org"));
-            cookie = loginCookieCollection["CAUTH"];
-            if (cookie == null)
-            {
-                Console.WriteLine(string.Format("Failed to authenticate as {0}", Username));
-                throw new Exception(string.Format("Failed to authenticate as {0}", Username));
-            }
-        }
-
-        private HttpWebResponse GetHttpWebResponse(string url, Dictionary<string, string> headers = null, string method = "GET", Cookie cookie = null, bool allowRedirect = true)
-        //, CookieContainer cookiejar)
-        {
-
-            /* WHEN I GET IN TROUBLE, RUN THIS
-            HttpWebRequest myHttpWebRequest2 = (HttpWebRequest)WebRequest.Create(url);
-            myHttpWebRequest2.Connection = null;
-            // Assign the response object of 'HttpWebRequest' to a 'HttpWebResponse' variable.
-            HttpWebResponse myHttpWebResponse2 = (HttpWebResponse)myHttpWebRequest2.GetResponse();
-            // Release the resources held by response object.
-            myHttpWebResponse2.Close();
-             */
-
-            HttpWebRequest postRequest = (HttpWebRequest)WebRequest.Create(url);
-            postRequest.Timeout = TIMEOUT * 10000000;
-            postRequest.ContentType = "application/x-www-form-urlencoded";
-            //postRequest.ContentLength = requestData.Length; //65
-
-            postRequest.Referer = "https://www.coursera.org"; //webResponse.ResponseUri.ToString(); //?
-
-            if (headers != null)
-            {
-                foreach (KeyValuePair<string, string> keyValuePair in headers)
-                {
-                    postRequest.Headers.Add(keyValuePair.Key, keyValuePair.Value);
-                }
-            }
-
-            //Deal with cookies
-            if (cookie != null)
-            {
-                cookiejar.Add(cookie);
-            }
-
-            postRequest.CookieContainer = cookiejar;
-
-            postRequest.Method = method;
-
-            postRequest.AllowAutoRedirect = allowRedirect;
-
-            postRequest.ServicePoint.Expect100Continue = true;
-
-            HttpWebResponse postResponse = (HttpWebResponse)postRequest.GetResponse();
-            return postResponse;
-        }
-
-        private static CookieCollection IterateOverCookies(HttpWebResponse postResponse, CookieContainer postCookies)
-        {
-            //=====
-            //Cookie cookie2 = postResponse.Cookies[0];
-            string s = postResponse.Headers.Get("Set-Cookie");
-            CookieCollection collection = postCookies.GetCookies(new Uri("http://coursera.org"));
-            Cookie cookie2 = collection[0];
-            CookieContainer testContainer = new CookieContainer();
-            foreach (Cookie cookie1 in postResponse.Cookies)
-            {
-                testContainer.Add(cookie1);
-            }
-            Hashtable table = (Hashtable)testContainer.GetType().InvokeMember("m_domainTable",
-                BindingFlags.NonPublic |
-                BindingFlags.GetField |
-                BindingFlags.Instance,
-                null,
-                testContainer,
-                new object[] { });
-
-
-            foreach (var key in table.Keys)
-            {
-                foreach (
-                    Cookie cook in
-                        testContainer.GetCookies(new Uri(string.Format("https://{0}/", key.ToString().Trim('.')))))
-                {
-                    Console.WriteLine("Name = {0} ; Value = {1} ; Domain = {2}", cook.Name, cook.Value,
-                        cook.Domain);
-                }
-            }
-            //=====
-            return collection;
-        }
-
         /// <summary>
         /// Given the name of a course, return the video lecture url
         /// </summary>
         /// <param name="courseName"></param>
         /// <returns></returns>
-        private string lecture_url_from_name(string courseName)
+        public string lecture_url_from_name(string courseName)
         {
             return string.Format(LECTURE_URL, courseName);
         }

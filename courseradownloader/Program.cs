@@ -86,13 +86,13 @@ namespace courseradownloader
             // authenticate, only need to do this once but need a classaname to get hold
             // of the csrf token, so simply pass the first one
             Console.WriteLine("Logging in as \"{0}\"...", username);
-            d.login(course_names[0]);
+            d.WebConnectionStuff.login(course_names[0], d);
             
             // download the content
             for (int i = 0; i < course_names.Length; i++)
             {
                 Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
-                d.download_course(course_names[i], dest_dir, true, gzip_courses);
+                d.download_course(course_names[i], dest_dir, false, gzip_courses);
             }
         }
 
