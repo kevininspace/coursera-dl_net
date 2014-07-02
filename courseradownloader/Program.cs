@@ -18,7 +18,7 @@ namespace courseradownloader
         private static string proxy;
         private static string reverse;
         private static string[] course_names;
-        private static string gzip_courses;
+        private static bool gzip_courses;
         private static int mppl;
         private static string wkfilter;
         private static string dest_dir;
@@ -40,7 +40,7 @@ namespace courseradownloader
             optionSet.Add("x:", "proxy to use, e.g., foo.bar.com:3125", value => proxy = value);
             optionSet.Add("reverse-sections:", "download and save the sections in reverse order", value => reverse = value); //action = "store_true";
             optionSet.Add("course_names=", "one or more course names from the url (e.g., comnets-2012-001)", value => course_names = value.Split('+')); //nargs = "+", metavar = "<course name>");
-            optionSet.Add("gz:", "Tarball courses for archival storage (folders get deleted)", value => gzip_courses = value); //action = "store_true"
+            optionSet.Add("gz:", "Tarball courses for archival storage (folders get deleted)", value => gzip_courses = (value == "true")); //action = "store_true"
             optionSet.Add("mppl:", "Maximum length of filenames/dirs in a path (windows only)", value => mppl = int.Parse(value)); //type = int, default = 100
             optionSet.Add("w:", "Comma separted list of week numbers to download e.g., 1,3,8", value => wkfilter = value);
             List<string> unparsedArgs = optionSet.Parse(args);

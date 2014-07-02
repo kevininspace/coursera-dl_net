@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -72,7 +73,7 @@ namespace courseradownloader
 
             Uri url = new Uri(resourceUrl.Trim());
 
-            UriBuilder uriBuilder = new UriBuilder(url){Scheme = Uri.UriSchemeHttp};
+            UriBuilder uriBuilder = new UriBuilder(url); //{Scheme = Uri.UriSchemeHttp}};
 
             return uriBuilder.Uri.AbsoluteUri;
         }
@@ -81,6 +82,14 @@ namespace courseradownloader
         {
             // parse the url into its components
             Uri u = new Uri(url);
+
+            NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(url);
+            string ext = string.Empty;
+            if (nameValueCollection.HasKeys() && nameValueCollection.GetValues("format") != null)
+            {
+                ext = nameValueCollection.GetValues("format").FirstOrDefault();
+            }
+
 
             // split the path into parts and unquote
             string[] strings = u.AbsolutePath.Split('/');
@@ -109,11 +118,18 @@ namespace courseradownloader
 
             
             // add an extension if none
-            string ext = Path.GetExtension(fname);
+            if (string.IsNullOrEmpty(ext) || string.IsNullOrWhiteSpace(ext))
+            {
+                ext = Path.GetExtension(fname);
+            }
 
             if( ext.Length < 1 || ext.Length > 5)
             {
                 fname += ".html";
+            }
+            else
+            {
+                fname = Path.ChangeExtension(fname, ext);
             }
 
             // remove any illegal chars and return
