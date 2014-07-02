@@ -16,7 +16,7 @@ using Newtonsoft.Json.Linq;
 
 namespace courseradownloader
 {
-    internal class CourseraDownloader
+    internal class CourseraDownloader : IDownloader
     {
 
         /*
@@ -37,12 +37,13 @@ namespace courseradownloader
         // see
         // http://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
         string DEFAULT_PARSER = "html.parser";
+        private Coursera _courseraCourse;
 
 
-        
-        
-
-        public CourseraDownloader(){}
+        public CourseraDownloader(Coursera coursera)
+        {
+            _courseraCourse = coursera;
+        }
 
 
         /// <summary>
@@ -50,7 +51,8 @@ namespace courseradownloader
         /// </summary>
         /// <param name="cname"></param>
         /// <param name="courseDir"></param>
-        private void download_about(string cname, string courseDir)
+        /// <param name="abouturl"></param>
+        private void download_about(string cname, string courseDir, string abouturl)
         {
             string fn = Path.Combine(courseDir, cname) + "-about.json";
 
@@ -59,7 +61,7 @@ namespace courseradownloader
             string base_name = strings[0];
 
             //get the json
-            string about_url = string.Format(ABOUT_URL, base_name);
+            string about_url = string.Format(abouturl, base_name);
             JObject jObject = get_json(about_url);
 
             //pretty print to file
@@ -135,10 +137,10 @@ namespace courseradownloader
             string ext = Path.GetExtension(fname);
 
             //ensure it respects mppl
-            fname = trim_path_part(fname);
+            fname = _courseraCourse.TrimPathPart(fname);
 
             //check if we should skip it (remember to remove the leading .)
-            if (!string.IsNullOrEmpty(ext) && Ignorefiles != null && Ignorefiles.Contains(ext))
+            if (!string.IsNullOrEmpty(ext) && _courseraCourse.Ignorefiles != null && _courseraCourse.Ignorefiles.Contains(ext))
             {
                 Console.WriteLine("    - skipping \"{0}\" (extension ignored)", fname);
                 return;
@@ -314,6 +316,126 @@ namespace courseradownloader
                 sys.stdout.flush()
         except Exception as e:
             print_("Failed to download url %s to %s: %s" % (url, filepath, e))
+             */
+        }
+
+        /// <summary>
+        /// Download all the contents (quizzes, videos, lecture notes, ...) of the course to the given destination directory (defaults to .)
+        /// </summary>
+        /// <param name="courseName"></param>
+        /// <param name="destDir"></param>
+        /// <param name="reverse"></param>
+        /// <param name="gzipCourses"></param>
+        public virtual void download_course(string cname, string destDir, bool reverse, bool gzipCourses, Course weeklyTopics)
+        {
+
+            if (!weeklyTopics.Weeks.Any())
+            {
+                Console.WriteLine(
+                    string.Format(" Warning: no downloadable content found for {0}, did you accept the honour code?",
+                        cname));
+            }
+            else
+            {
+                Console.WriteLine(
+                    string.Format(" * Got all downloadable content for {0} ", cname));
+            }
+
+            if (reverse)
+            {
+                weeklyTopics.Weeks.Reverse();
+            }
+
+            //where the course will be downloaded to
+            string course_dir = Path.Combine(destDir, cname);
+            if (!Directory.Exists(course_dir))
+            {
+                DirectoryInfo directoryInfo = Directory.CreateDirectory(course_dir);
+            }
+
+            Console.WriteLine("* " + cname + " will be downloaded to " + course_dir);
+            //download the standard pages
+            Console.WriteLine(" - Downloading lecture/syllabus pages");
+
+            download(string.Format(_courseraCourse.HOME_URL, cname), course_dir, "index.html");
+            download(string.Format(_courseraCourse.lecture_url_from_name(cname)), course_dir, "lectures.html");
+
+            try
+            {
+                download_about(cname, course_dir, _courseraCourse.ABOUT_URL);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Warning: failed to download about file: {0}", e.Message);
+            }
+
+            //now download the actual content (video's, lecture notes, ...)
+            foreach (Week week in weeklyTopics.Weeks)
+            {
+                //TODO: filter
+                /*if (Wk_filter && week.Key)
+                {
+                    
+                }
+                 * 
+                 *             if self.wk_filter and j not in self.wk_filter:
+                print_(" - skipping %s (idx = %s), as it is not in the week filter" %
+                       (weeklyTopic, j))
+                continue
+                 */
+
+                // add a numeric prefix to the week directory name to ensure
+                // chronological ordering
+
+                string wkdirname = week.WeekNum.ToString().PadLeft(2, '0') + " - " + week.WeekName;
+
+                //ensure the week dir exists
+                Console.WriteLine(" - " + week.WeekName);
+                string wkdir = Path.Combine(course_dir, wkdirname);
+                Directory.CreateDirectory(wkdir);
+
+                foreach (ClassSegment classSegment in week.ClassSegments)
+                {
+                    //ensure chronological ordering
+                    string clsdirname = classSegment.ClassNum.ToString().PadLeft(2, '0') + " - " + classSegment.ClassName;
+
+                    //ensure the class dir exists
+                    string clsdir = Path.Combine(wkdir, clsdirname);
+                    Directory.CreateDirectory(clsdir);
+
+                    Console.WriteLine(" - Downloading resources for " + classSegment.ClassName);
+
+                    //download each resource
+                    foreach (KeyValuePair<string, string> resourceLink in classSegment.ResourceLinks)
+                    {
+                        try
+                        {
+                            download(resourceLink.Key, clsdir, resourceLink.Value);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.WriteLine(string.Format("   - failed: {0}, {1}", resourceLink.Key, e.Message));
+                            throw e;
+                        }
+                    }
+
+                }
+            }
+
+            if (gzipCourses)
+            {
+                ZipFile.CreateFromDirectory(destDir, cname + ".zip");
+            }
+            /*
+
+        if gzip_courses:
+            tar_file_name = cname + ".tar.gz"
+            print_("Compressing and storing as " + tar_file_name)
+            tar = tarfile.open(os.path.join(dest_dir, tar_file_name), 'w:gz')
+            tar.add(os.path.join(dest_dir, cname), arcname=cname)
+            tar.close()
+            print_("Compression complete. Cleaning up.")
+            shutil.rmtree(os.path.join(dest_dir, cname))
              */
         }
 

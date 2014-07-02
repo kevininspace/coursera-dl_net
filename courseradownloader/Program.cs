@@ -82,7 +82,7 @@ namespace courseradownloader
 
             // instantiate the downloader class
             Coursera coursera = new Coursera(username, password, proxy, parser, ignorefiles, mppl, gzip_courses, wkfilter);
-            CourseraDownloader d = new CourseraDownloader();
+            //CourseraDownloader d = new CourseraDownloader();
 
             // authenticate, only need to do this once but need a classaname to get hold
             // of the csrf token, so simply pass the first one
@@ -98,7 +98,7 @@ namespace courseradownloader
                 
                 Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
                 
-                coursera.download_course(course_names[i], dest_dir, false, gzip_courses, courseContent);
+                coursera.Download(course_names[i], dest_dir, false, gzip_courses, courseContent);
             }
         }
 

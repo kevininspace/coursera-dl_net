@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -18,7 +19,7 @@ namespace courseradownloader
         private string Password;
         private readonly WebConnectionStuff _webConnectionStuff;
         private string Parser;
-        private IEnumerable<string> Ignorefiles;
+        public IEnumerable<string> Ignorefiles;
         private int Max_path_part_len;
         private bool Gzip_courses;
         private string[] Wk_filter;
@@ -26,7 +27,7 @@ namespace courseradownloader
         string QUIZ_URL;
         string AUTH_URL;
         string LOGIN_URL = "https://accounts.coursera.org/api/v1/login";
-        string ABOUT_URL = "https://www.coursera.org/maestro/api/topic/information?topic-id={0}";
+        public string ABOUT_URL = "https://www.coursera.org/maestro/api/topic/information?topic-id={0}";
 
         public Coursera(string username, string password, string proxy, string parser, string ignorefiles, int mppl, bool gzipCourses, string wkfilter)
         {
@@ -71,7 +72,8 @@ namespace courseradownloader
         {
             get { return "https://class.coursera.org/{0}"; }
         }
-        protected override string HOME_URL
+
+        public override string HOME_URL
         {
             get { return BASE_URL + "/class/index"; }
         }
@@ -101,18 +103,7 @@ namespace courseradownloader
             get { return _webConnectionStuff; }
         }
 
-        protected virtual string trim_path_part(string weekTopic)
-        {
-            //TODO: simple hack, something more elaborate needed
-            if (Max_path_part_len != 0 && weekTopic.Length > Max_path_part_len)
-            {
-                return weekTopic.Substring(0, Max_path_part_len);
-            }
-            else
-            {
-                return weekTopic;
-            }
-        }
+
 
         /// <summary>
         /// Given the video lecture URL of the course, return a list of all downloadable resources.
@@ -165,7 +156,7 @@ namespace courseradownloader
                                 h3txt = h3.InnerText.Trim();
                             }
                             string weekTopic = util.sanitise_filename(h3txt);
-                            weekTopic = trim_path_part(weekTopic);
+                            weekTopic = TrimPathPart(weekTopic);
 
                             Week weeklyContent = new Week(weekTopic);
                             weeklyContent.WeekNum = i++;
@@ -192,7 +183,7 @@ namespace courseradownloader
                                     className = className.Replace(":", "-");
                                 }
                                 className = util.sanitise_filename(className);
-                                className = trim_path_part(className);
+                                className = TrimPathPart(className);
 
                                 //collect all the resources for this class (ppt, pdf, mov, ..)
                                 HtmlNodeCollection classResources = li.SelectNodes("./div[contains(concat(' ', @class, ' '), ' course-lecture-item-resource ')]/a");
@@ -295,17 +286,20 @@ namespace courseradownloader
             _webConnectionStuff.Login(LOGIN_URL, postData.ToString());
         }
 
-        public override void Download()
+        public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
         {
-            CourseraDownloader cd = new CourseraDownloader();
+            CourseraDownloader cd = new CourseraDownloader(this);
+            cd.download_course(courseName, destDir, b, gzipCourses, courseContent);
             
         }
+
     }
 
     abstract class MOOC : IMooc
     {
+        private int Max_path_part_len;
         protected abstract string BASE_URL { get; }
-        protected abstract string HOME_URL { get; }
+        public abstract string HOME_URL { get; }
         protected abstract string LECTURE_URL { get; }
 
         /// <summary>
@@ -337,131 +331,30 @@ namespace courseradownloader
             return page;
         }
 
-
-        /// <summary>
-        /// Download all the contents (quizzes, videos, lecture notes, ...) of the course to the given destination directory (defaults to .)
-        /// </summary>
-        /// <param name="courseName"></param>
-        /// <param name="destDir"></param>
-        /// <param name="reverse"></param>
-        /// <param name="gzipCourses"></param>
-        public virtual void download_course(string cname, string destDir, bool reverse, bool gzipCourses, Course weeklyTopics)
+        public virtual string TrimPathPart(string weekTopic)
         {
-
-            if (!weeklyTopics.Weeks.Any())
+            //TODO: simple hack, something more elaborate needed
+            if (Max_path_part_len != 0 && weekTopic.Length > Max_path_part_len)
             {
-                Console.WriteLine(
-                    string.Format(" Warning: no downloadable content found for {0}, did you accept the honour code?",
-                        cname));
+                return weekTopic.Substring(0, Max_path_part_len);
             }
             else
             {
-                Console.WriteLine(
-                    string.Format(" * Got all downloadable content for {0} ", cname));
+                return weekTopic;
             }
-
-            if (reverse)
-            {
-                weeklyTopics.Weeks.Reverse();
-            }
-
-            //where the course will be downloaded to
-            string course_dir = Path.Combine(destDir, cname);
-            if (!Directory.Exists(course_dir))
-            {
-                DirectoryInfo directoryInfo = Directory.CreateDirectory(course_dir);
-            }
-
-            Console.WriteLine("* " + cname + " will be downloaded to " + course_dir);
-            //download the standard pages
-            Console.WriteLine(" - Downloading lecture/syllabus pages");
-
-            download(string.Format(HOME_URL, cname), course_dir, "index.html");
-            download(string.Format(lecture_url_from_name(cname)), course_dir, "lectures.html");
-
-            try
-            {
-                download_about(cname, course_dir);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Warning: failed to download about file: {0}", e.Message);
-            }
-
-            //now download the actual content (video's, lecture notes, ...)
-            foreach (Week week in weeklyTopics.Weeks)
-            {
-                //TODO: filter
-                /*if (Wk_filter && week.Key)
-                {
-                    
-                }
-                 * 
-                 *             if self.wk_filter and j not in self.wk_filter:
-                print_(" - skipping %s (idx = %s), as it is not in the week filter" %
-                       (weeklyTopic, j))
-                continue
-                 */
-
-                // add a numeric prefix to the week directory name to ensure
-                // chronological ordering
-
-                string wkdirname = week.WeekNum.ToString().PadLeft(2, '0') + " - " + week.WeekName;
-
-                //ensure the week dir exists
-                Console.WriteLine(" - " + week.WeekName);
-                string wkdir = Path.Combine(course_dir, wkdirname);
-                Directory.CreateDirectory(wkdir);
-
-                foreach (ClassSegment classSegment in week.ClassSegments)
-                {
-                    //ensure chronological ordering
-                    string clsdirname = classSegment.ClassNum.ToString().PadLeft(2, '0') + " - " + classSegment.ClassName;
-
-                    //ensure the class dir exists
-                    string clsdir = Path.Combine(wkdir, clsdirname);
-                    Directory.CreateDirectory(clsdir);
-
-                    Console.WriteLine(" - Downloading resources for " + classSegment.ClassName);
-
-                    //download each resource
-                    foreach (KeyValuePair<string, string> resourceLink in classSegment.ResourceLinks)
-                    {
-                        try
-                        {
-                            download(resourceLink.Key, clsdir, resourceLink.Value);
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine(string.Format("   - failed: {0}, {1}", resourceLink.Key, e.Message));
-                            throw e;
-                        }
-                    }
-
-                }
-            }
-
-            if (gzipCourses)
-            {
-                ZipFile.CreateFromDirectory(destDir, cname + ".zip");
-            }
-            /*
-
-        if gzip_courses:
-            tar_file_name = cname + ".tar.gz"
-            print_("Compressing and storing as " + tar_file_name)
-            tar = tarfile.open(os.path.join(dest_dir, tar_file_name), 'w:gz')
-            tar.add(os.path.join(dest_dir, cname), arcname=cname)
-            tar.close()
-            print_("Compression complete. Cleaning up.")
-            shutil.rmtree(os.path.join(dest_dir, cname))
-             */
         }
+
+        
 
 
         public abstract Course GetDownloadableContent(string cname);
         public abstract void Login();
-        public abstract void Download();
+        public abstract void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent);
+    }
+
+    internal interface IDownloader
+    {
+        void download(string format, string courseDir, string indexHtml);
     }
 
     internal interface IMooc

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>7ZipCLI</id>
+    <version>9.20.0</version>
+    <title>7-Zip CLI + SFX Modules</title>
+    <authors>Igor Pavlov</authors>
+    <owners>Igor Pavlov</owners>
+    <licenseUrl>http://www.7-zip.org/license.txt</licenseUrl>
+    <projectUrl>http://www.7-zip.org/</projectUrl>
+    <iconUrl>http://raw.github.com/devtok/nugetpackages/stable/7ZipCLI/7zip.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>7-Zip is a file archiver with a high compression ratio.
+This package contains 7za.exe and the sfx modules 7zS, 7zS2, 7zSD and 7zS2con.</description>
+    <summary>7-Zip is a file archiver with a high compression ratio.</summary>
+    <copyright>Copyright � 1999-2010 Igor Pavlov.</copyright>
+    <tags>7z 7zip 7za sfx</tags>
+  </metadata>
+</package>

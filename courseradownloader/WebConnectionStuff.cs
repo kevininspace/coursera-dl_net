@@ -166,11 +166,13 @@ namespace courseradownloader
         /// Login into coursera and obtain the necessary session cookies
         /// </summary>
         /// <param name="courseName"></param>
+        /// <param name="url"></param>
+        /// <param name="postData"></param>
         public void Login(string url, string postData)
         {
             //string url = courseraDownloader.lecture_url_from_name(courseName);
             cookiejar = new CookieContainer();
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + postData);
             webRequest.CookieContainer = cookiejar;
             webRequest.Timeout = Timeout * 1000;
             //webRequest.Proxy = new WebProxy(Proxy);
@@ -191,7 +193,7 @@ namespace courseradownloader
 
                 webResponse.Close();
 
-                CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(url));
+                CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(url + postData));
                 cookie = cookieCollection["csrf_token"];
                 if (cookie == null)
                 {
