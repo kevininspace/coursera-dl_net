@@ -12,19 +12,18 @@ namespace courseradownloader
     internal class WebConnectionStuff
     {
         // how long to try to open a URL before timing out
-        int TIMEOUT = 30;
+        static int TIMEOUT = 30;
 
-        private CourseraDownloader _courseraDownloader;
-        private CookieContainer cookiejar;
+        private static CookieContainer cookiejar;
 
-        public WebConnectionStuff(CourseraDownloader courseraDownloader)
+        public WebConnectionStuff()
         {
-            _courseraDownloader = courseraDownloader;
+            //_courseraDownloader = courseraDownloader;
         }
 
-        private string get_headers(string url, string headerName)
+        private string GetHeaders(string url, string headerName)
         {
-            Dictionary<string, string> headers = get_headers(url);
+            Dictionary<string, string> headers = GetHeaders(url);
             string headerValue;
             headers.TryGetValue(headerName, out headerValue);
             return headerValue;
@@ -36,7 +35,7 @@ namespace courseradownloader
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public Dictionary<string, string> get_headers(string url)
+        public static Dictionary<string, string> GetHeaders(string url)
         {
             HttpWebResponse r = GetResponse(url, stream: true);
             WebHeaderCollection headerCollection = r.Headers;
@@ -52,7 +51,7 @@ namespace courseradownloader
         /// Get the response
         /// </summary>
         /// <param name="url"></param>
-        public HttpWebResponse GetResponse(string url, int retries = 3, bool stream = false, Dictionary<string, string> headers = null)
+        public static HttpWebResponse GetResponse(string url, int retries = 3, bool stream = false, Dictionary<string, string> headers = null)
         {
             HttpWebResponse httpWebResponse = null;
             for (int i = 0; i < retries; i++)
@@ -82,7 +81,7 @@ namespace courseradownloader
             get { return TIMEOUT; }
         }
 
-        public HttpWebResponse GetHttpWebResponse(string url, Dictionary<string, string> headers = null, string method = "GET", Cookie cookie = null, bool allowRedirect = true)
+        public static HttpWebResponse GetHttpWebResponse(string url, Dictionary<string, string> headers = null, string method = "GET", Cookie cookie = null, bool allowRedirect = true)
             //, CookieContainer cookiejar)
         {
 
@@ -167,9 +166,9 @@ namespace courseradownloader
         /// Login into coursera and obtain the necessary session cookies
         /// </summary>
         /// <param name="courseName"></param>
-        public void login(string courseName, CourseraDownloader courseraDownloader)
+        public void Login(string url, string postData)
         {
-            string url = courseraDownloader.lecture_url_from_name(courseName);
+            //string url = courseraDownloader.lecture_url_from_name(courseName);
             cookiejar = new CookieContainer();
             HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url);
             webRequest.CookieContainer = cookiejar;
@@ -186,7 +185,8 @@ namespace courseradownloader
                 if (webResponse.StatusCode == HttpStatusCode.NotFound)
                 {
                     webResponse.Close();
-                    throw new Exception(string.Format("Unknown class {0}", courseName));
+                    //TODO: Need better exception message
+                    throw new Exception(string.Format("Unknown class {0}", url));
                 }
 
                 webResponse.Close();
@@ -208,11 +208,6 @@ namespace courseradownloader
                 }
             }
 
-
-            // call the authenticator url
-            StringBuilder postData = new StringBuilder();
-            postData.Append("?email=" + HttpUtility.UrlEncode(courseraDownloader.Username1) + "&");
-            postData.Append("password=" + HttpUtility.UrlEncode(courseraDownloader.Password1));
             //byte[] requestData = Encoding.ASCII.GetBytes(postData.ToString());
 
             Dictionary<string, string> newHeader = new Dictionary<string, string>
@@ -222,7 +217,7 @@ namespace courseradownloader
             //CookieContainer postCookies = new CookieContainer(); //use new cookiejar
             Cookie crsfCookie = new Cookie("csrftoken", cookie.Value, "/", ".coursera.org");
 
-            HttpWebResponse postResponse = GetHttpWebResponse(courseraDownloader.LoginUrl + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
+            HttpWebResponse postResponse = GetHttpWebResponse(url + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
             if (postResponse.StatusCode == HttpStatusCode.Unauthorized)
             {
                 postResponse.Close();
@@ -234,8 +229,8 @@ namespace courseradownloader
             cookie = loginCookieCollection["CAUTH"];
             if (cookie == null)
             {
-                Console.WriteLine(string.Format("Failed to authenticate as {0}", courseraDownloader.Username1));
-                throw new Exception(string.Format("Failed to authenticate as {0}", courseraDownloader.Username1));
+                Console.WriteLine(string.Format("Failed to authenticate using {0}", postData));
+                throw new Exception(string.Format("Failed to authenticate using {0}", postData));
             }
         }
     }

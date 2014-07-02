@@ -81,18 +81,24 @@ namespace courseradownloader
             }
 
             // instantiate the downloader class
-            CourseraDownloader d = new CourseraDownloader(username, password, proxy, parser, ignorefiles, mppl, gzip_courses, wkfilter);
+            Coursera coursera = new Coursera(username, password, proxy, parser, ignorefiles, mppl, gzip_courses, wkfilter);
+            CourseraDownloader d = new CourseraDownloader();
 
             // authenticate, only need to do this once but need a classaname to get hold
             // of the csrf token, so simply pass the first one
             Console.WriteLine("Logging in as \"{0}\"...", username);
-            d.WebConnectionStuff.login(course_names[0], d);
+            coursera.Login();//.WebConnectionStuff.login(course_names[0], d);
+            
             
             // download the content
             for (int i = 0; i < course_names.Length; i++)
             {
+                Course courseContent = coursera.GetDownloadableContent(course_names[i]);
+                coursera.Courses.Add(courseContent);
+                
                 Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
-                d.download_course(course_names[i], dest_dir, false, gzip_courses);
+                
+                coursera.download_course(course_names[i], dest_dir, false, gzip_courses, courseContent);
             }
         }
 
