@@ -168,11 +168,11 @@ namespace courseradownloader
         /// <param name="courseName"></param>
         /// <param name="url"></param>
         /// <param name="postData"></param>
-        public void Login(string url, string postData)
+        public void Login(string classURL, string loginUrl, string postData)
         {
             //string url = courseraDownloader.lecture_url_from_name(courseName);
             cookiejar = new CookieContainer();
-            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(url + postData);
+            HttpWebRequest webRequest = (HttpWebRequest)WebRequest.Create(classURL);
             webRequest.CookieContainer = cookiejar;
             webRequest.Timeout = Timeout * 1000;
             //webRequest.Proxy = new WebProxy(Proxy);
@@ -188,12 +188,12 @@ namespace courseradownloader
                 {
                     webResponse.Close();
                     //TODO: Need better exception message
-                    throw new Exception(string.Format("Unknown class {0}", url));
+                    throw new Exception(string.Format("Unknown class {0}", classURL));
                 }
 
                 webResponse.Close();
 
-                CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(url + postData));
+                CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(classURL));
                 cookie = cookieCollection["csrf_token"];
                 if (cookie == null)
                 {
@@ -219,7 +219,7 @@ namespace courseradownloader
             //CookieContainer postCookies = new CookieContainer(); //use new cookiejar
             Cookie crsfCookie = new Cookie("csrftoken", cookie.Value, "/", ".coursera.org");
 
-            HttpWebResponse postResponse = GetHttpWebResponse(url + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
+            HttpWebResponse postResponse = GetHttpWebResponse(loginUrl + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
             if (postResponse.StatusCode == HttpStatusCode.Unauthorized)
             {
                 postResponse.Close();

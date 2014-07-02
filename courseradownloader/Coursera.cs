@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.UI;
 using HtmlAgilityPack;
 
 namespace courseradownloader
@@ -26,6 +27,7 @@ namespace courseradownloader
 
         string QUIZ_URL;
         string AUTH_URL;
+        string ROOT_URL = "https://class.coursera.org/";
         string LOGIN_URL = "https://accounts.coursera.org/api/v1/login";
         public string ABOUT_URL = "https://www.coursera.org/maestro/api/topic/information?topic-id={0}";
 
@@ -64,6 +66,8 @@ namespace courseradownloader
                 Console.WriteLine("Invalid week filter, should be a comma separated list of integers.");
                 Console.WriteLine(e.Message);
             }
+
+            Courses = new List<Course>();
         }
 
         public List<Course> Courses { get; set; }
@@ -72,6 +76,8 @@ namespace courseradownloader
         {
             get { return "https://class.coursera.org/{0}"; }
         }
+
+
 
         public override string HOME_URL
         {
@@ -272,18 +278,26 @@ namespace courseradownloader
             return null;
         }
 
+        public override void Login()
+        {
+            throw new NotImplementedException();
+        }
+
         private void WcOnDownloadStringCompleted(object sender, DownloadStringCompletedEventArgs downloadStringCompletedEventArgs)
         {
             string result = downloadStringCompletedEventArgs.Result;
         }
 
-        public override void Login()
+        public override void Login(string s)
         {
+            //Coursera requires a course name to get the initial cookie
+
+
             // call the authenticator url
             StringBuilder postData = new StringBuilder();
             postData.Append("?email=" + HttpUtility.UrlEncode(Username1) + "&");
             postData.Append("password=" + HttpUtility.UrlEncode(Password1));
-            _webConnectionStuff.Login(LOGIN_URL, postData.ToString());
+            _webConnectionStuff.Login(lecture_url_from_name(s), LOGIN_URL, postData.ToString());
         }
 
         public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
@@ -349,6 +363,7 @@ namespace courseradownloader
 
         public abstract Course GetDownloadableContent(string cname);
         public abstract void Login();
+        public abstract void Login(string s);
         public abstract void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent);
     }
 

@@ -87,7 +87,8 @@ namespace courseradownloader
             // authenticate, only need to do this once but need a classaname to get hold
             // of the csrf token, so simply pass the first one
             Console.WriteLine("Logging in as \"{0}\"...", username);
-            coursera.Login();//.WebConnectionStuff.login(course_names[0], d);
+
+            coursera.Login(course_names[0]);//.WebConnectionStuff.login(course_names[0], d);
             
             
             // download the content
