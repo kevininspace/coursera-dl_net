@@ -414,8 +414,21 @@ namespace courseradownloader
                     int slice_size = 524288; //512 kB buffer
                     DateTime last_time = DateTime.Now;
 
+                    using (WebClient webClient = new WebClient())
+                    {
+                        
+                        
+                    }
+
                     using (HttpWebResponse response = WebConnectionStuff.GetResponse(url, stream: true))
                     {
+                        //WebHeaderCollection webHeaderCollection = response.Headers;
+
+                            string responseHeader = response.GetResponseHeader("Content-Disposition");
+                        string[] strings = responseHeader.Split(';');
+                        string enumerable = strings.First(s => s.Contains("filename="));
+                        //  filename="1%20-%201%20-%20Course%20Overview%20Promotion%20%282%3A02%29.mp4"
+
                         using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                         {
                             //if (ext == ".mp4" || )
