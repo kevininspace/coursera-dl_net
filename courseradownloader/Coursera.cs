@@ -76,9 +76,7 @@ namespace courseradownloader
         {
             get { return "https://class.coursera.org/{0}"; }
         }
-
-
-
+        
         public override string HOME_URL
         {
             get { return BASE_URL + "/class/index"; }
@@ -109,18 +107,15 @@ namespace courseradownloader
             get { return _webConnectionStuff; }
         }
 
-
-
         /// <summary>
         /// Given the video lecture URL of the course, return a list of all downloadable resources.
         /// </summary>
-        /// <param name="course_url"></param>
-        public override Course GetDownloadableContent(string cname)
+        public override Course GetDownloadableContent(string courseName)
         {
             //get the lecture url
-            string course_url = lecture_url_from_name(cname);
+            string course_url = lecture_url_from_name(courseName);
 
-            Course courseContent = new Course(cname);
+            Course courseContent = new Course(courseName);
             Console.WriteLine("* Collecting downloadable content from " + course_url);
 
             //get the course name, and redirect to the course lecture page
@@ -133,11 +128,9 @@ namespace courseradownloader
             if (htmlDoc.ParseErrors != null && htmlDoc.ParseErrors.Any())
             {
                 // Handle any parse errors as required
-
             }
             else
             {
-
                 if (htmlDoc.DocumentNode != null)
                 {
                     //# extract the weekly classes
@@ -180,14 +173,7 @@ namespace courseradownloader
                                 //the name of this class
                                 string className = li.SelectSingleNode("a").InnerText.Trim();
 
-                                //Many class names have the following format:
-                                //"Something really cool (12:34)"
-                                //If the class name has this format, replace the colon in the
-                                //time with a hyphen.
-                                if (Regex.IsMatch(className, @".+\(\d?\d:\d\d\)$"))
-                                {
-                                    className = className.Replace(":", "-");
-                                }
+                                className.RemoveColon();
                                 className = util.sanitise_filename(className);
                                 className = TrimPathPart(className);
 
@@ -303,7 +289,7 @@ namespace courseradownloader
         public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
         {
             CourseraDownloader cd = new CourseraDownloader(this);
-            cd.download_course(courseName, destDir, b, gzipCourses, courseContent);
+            cd.DownloadCourse(courseName, destDir, b, gzipCourses, courseContent);
             
         }
 
@@ -361,7 +347,7 @@ namespace courseradownloader
         
 
 
-        public abstract Course GetDownloadableContent(string cname);
+        public abstract Course GetDownloadableContent(string courseName);
         public abstract void Login();
         public abstract void Login(string s);
         public abstract void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent);
@@ -369,12 +355,32 @@ namespace courseradownloader
 
     internal interface IDownloader
     {
-        void download(string format, string courseDir, string indexHtml);
+        void download(string format, string targetDir, string targetFname);
     }
 
     internal interface IMooc
     {
-        Course GetDownloadableContent(string cname);
+        Course GetDownloadableContent(string courseName);
         void Login();
     }
+
+    public static class Extensions
+    {
+        /// <summary>
+        /// Many class names have the following format: "Something really cool (12:34)"
+        /// If the class name has this format, replace the colon in the time with a hyphen.
+        /// </summary>
+        /// <param name="str">The string you want to remove the colon (":") from.</param>
+        /// <returns>The string with the colon replaced by a hyphen. ":" => "-"</returns>
+        public static string RemoveColon(this string str)
+        {
+
+            if (Regex.IsMatch(str, @".+\(\d?\d:\d\d\)"))
+            {
+                str = str.Replace(":", "-");
+            }
+            return str;
+        }
+
+    }  
 }

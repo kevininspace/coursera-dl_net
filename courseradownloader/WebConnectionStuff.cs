@@ -9,7 +9,7 @@ using System.Web;
 
 namespace courseradownloader
 {
-    internal class WebConnectionStuff
+    public class WebConnectionStuff
     {
         // how long to try to open a URL before timing out
         static int TIMEOUT = 30;

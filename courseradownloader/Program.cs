@@ -36,12 +36,10 @@ namespace courseradownloader
 
             optionSet.Add("d:", "destination directory where everything will be saved", value => dest_dir = value);
             optionSet.Add("n:", "comma-separated list of file extensions to skip, e.g., \"ppt,srt,pdf\"", value => ignorefiles = value);
-            optionSet.Add("q:", "the html parser to use, see http://www.crummy.com/software/BeautifulSoup/bs4/doc///installing-a-parser", value => parser = value); // dest = "parser", type = str, default = CourseraDownloader.DEFAULT_PARSER, )
-            optionSet.Add("x:", "proxy to use, e.g., foo.bar.com:3125", value => proxy = value);
-            optionSet.Add("reverse-sections:", "download and save the sections in reverse order", value => reverse = value); //action = "store_true";
-            optionSet.Add("course_names=", "one or more course names from the url (e.g., comnets-2012-001)", value => course_names = value.Split('+')); //nargs = "+", metavar = "<course name>");
-            optionSet.Add("gz:", "Tarball courses for archival storage (folders get deleted)", value => gzip_courses = (value == "true")); //action = "store_true"
-            optionSet.Add("mppl:", "Maximum length of filenames/dirs in a path (windows only)", value => mppl = int.Parse(value)); //type = int, default = 100
+            optionSet.Add("reverse-sections:", "download and save the sections in reverse order", value => reverse = value);
+            optionSet.Add("course_names=", "one or more course names from the url (e.g., comnets-2012-001)", value => course_names = value.Split('+'));
+            optionSet.Add("gz:", "Tarball courses for archival storage (folders get deleted)", value => gzip_courses = (value == "true"));
+            optionSet.Add("mppl:", "Maximum length of filenames/dirs in a path", value => mppl = int.Parse(value));
             optionSet.Add("w:", "Comma separted list of week numbers to download e.g., 1,3,8", value => wkfilter = value);
             List<string> unparsedArgs = optionSet.Parse(args);
 
@@ -52,7 +50,7 @@ namespace courseradownloader
             // provided in command-line args
             if (unparsedArgs.Contains("u"))
             {
-                object creds = get_netrc_creds();
+                /*object creds = get_netrc_creds();
                 if (creds == null)
                 {
                     throw new Exception("No username passed and no .netrc credentials found (check a netrc file exists and has the correct permissions), unable to login");
@@ -63,6 +61,7 @@ namespace courseradownloader
                     ////username1 = creds.Username;
                     ////password1 = creds.Password;
                 }
+                 */
             }
             else if (unparsedArgs.Contains("p")) // prompt the user for his password if not specified
             {
@@ -80,35 +79,46 @@ namespace courseradownloader
                 Console.WriteLine("Maximum length of a path component set to {0}", mppl);
             }
 
-            // instantiate the downloader class
-            Coursera coursera = new Coursera(username, password, proxy, parser, ignorefiles, mppl, gzip_courses, wkfilter);
-            //CourseraDownloader d = new CourseraDownloader();
-
-            // authenticate, only need to do this once but need a classaname to get hold
-            // of the csrf token, so simply pass the first one
-            Console.WriteLine("Logging in as \"{0}\"...", username);
-
-            coursera.Login(course_names[0]);//.WebConnectionStuff.login(course_names[0], d);
-            
-            
-            // download the content
-            for (int i = 0; i < course_names.Length; i++)
+            Coursera coursera = null;
+            int i = 0;
+            foreach (string courseName in course_names)
             {
-                Course courseContent = coursera.GetDownloadableContent(course_names[i]);
-                coursera.Courses.Add(courseContent);
-                
-                Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
-                
-                coursera.Download(course_names[i], dest_dir, false, gzip_courses, courseContent);
+                string[] courseLocationName = courseName.Split(':');
+                switch (courseLocationName[0]) //which site
+                {
+                    case "coursera":
+                        // instantiate the downloader class
+                        coursera = new Coursera(username, password, proxy, parser, ignorefiles, mppl, gzip_courses, wkfilter);
+                        // authenticate, only need to do this once but need a classaname to get hold
+                        // of the csrf token, so simply pass the first one
+                        Console.WriteLine("Logging in as \"{0}\"...", username);
+                        coursera.Login(courseLocationName[1]); //the actual course name
+                        Course courseContent = coursera.GetDownloadableContent(courseLocationName[1]);
+                        coursera.Courses.Add(courseContent);
+                        Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
+                        break;
+                    case "futurelearn":
+                        break;
+                    case "udacity":
+                        break;
+                    case "edx":
+                        break;
+                }
+                i++;
+            }
+
+            // download the content
+            foreach (Course course in coursera.Courses)
+            {
+                coursera.Download(course.CourseName, dest_dir, false, gzip_courses, course);
             }
         }
-
+        /*
         private static object get_netrc_creds()
         {
-           //Read username/password from the users' netrc file. Returns None if no
-            //coursera credentials can be found.
-    // inspired by https://github.com/jplehmann/coursera
-            string environmentVariable = System.Environment.GetEnvironmentVariable("HOME");
+            // Read username/password from the users' netrc file. Returns null if no
+            // coursera credentials can be found.
+            // inspired by https://github.com/jplehmann/coursera
             List<string> environmentVariablesList = new List<string>()
             {
                 Environment.GetEnvironmentVariable("HOME"),
@@ -136,7 +146,7 @@ namespace courseradownloader
                 try
                 {
                     //auths = netrc.netrc(p).authenticators('coursera-dl');
-            //creds = (auths[0], auths[2]);
+                    //creds = (auths[0], auths[2]);
                     //print_("Credentials found in .netrc file");
                     break;
                 }
@@ -148,5 +158,6 @@ namespace courseradownloader
 
             return creds;
         }
+         */
     }
 }
