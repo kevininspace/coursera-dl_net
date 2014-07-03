@@ -13,6 +13,7 @@ using System.Web.Script.Serialization;
 using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SevenZip;
 
 namespace courseradownloader
 {
@@ -223,6 +224,19 @@ namespace courseradownloader
 
                     using (HttpWebResponse response = WebConnectionStuff.GetResponse(url, stream: true))
                     {
+
+                        string responseHeader = response.GetResponseHeader("Content-Disposition");
+                        string[] strings = responseHeader.Split(';');
+                        string enumerable = strings.FirstOrDefault(s => s.Contains("filename="));
+                        //  filename="1%20-%201%20-%20Course%20Overview%20Promotion%20%282%3A02%29.mp4"
+                        if (enumerable != null)
+                        {
+                            int firstQuotePosition = enumerable.IndexOf('"');
+                            string dirtyName = enumerable.Substring(firstQuotePosition + 1).Remove(enumerable.Length - firstQuotePosition - 2);
+
+                            string cleanName = HttpUtility.UrlDecode(dirtyName);
+                        }
+
                         using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                         {
                             //if (ext == ".mp4" || )
@@ -424,7 +438,9 @@ namespace courseradownloader
 
             if (gzipCourses)
             {
-                ZipFile.CreateFromDirectory(destDir, cname + ".zip");
+                SevenZipCompressor zipCompressor = new SevenZipCompressor();
+                zipCompressor.CompressDirectory(destDir, cname + ".7z");
+                
             }
             /*
 
