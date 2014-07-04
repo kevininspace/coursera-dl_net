@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
@@ -11,13 +12,13 @@ namespace courseradownloader
 {
     public static class util
     {
-        internal static string filename_from_header(Dictionary<string, string> headers)
+        internal static string filename_from_header(WebHeaderCollection headers)
         {
             try
             {
                 string cd = headers["Content-Disposition"];
-                Match m = Regex.Match(cd, "atachment; filename=\"(.*?)\"");
-                Group g = m.Groups[0];
+                Match m = Regex.Match(cd, "attachment; filename=\"(.*?)\"");
+                Group g = m.Groups[1];
                 string gDecode = g.Value;
                 if (gDecode.Contains("%"))
                 {
@@ -48,8 +49,8 @@ namespace courseradownloader
             normalize = HtmlAgilityPack.HtmlEntity.DeEntitize(normalize);
             
             //remove any characters not in the whitelist
-            normalize = Regex.Replace(normalize, @"[^\w\-\(\)\[\]\., ]", @"").Trim();
-
+            normalize = Regex.Replace(normalize, @"[^\w\-\(\)\[\]\., \:]", @"").Trim();
+            normalize = normalize.RemoveColon();
             /*TODO
              * # ensure it is within a sane maximum
              * max = 250
