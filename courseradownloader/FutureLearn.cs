@@ -243,13 +243,28 @@ namespace courseradownloader
 
         public override void Login()
         {
+            string loginPage = get_page(LOGIN_URL);
+            HtmlDocument htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(loginPage);
+
+            string authenticity_token = "";
+            if (htmlDoc.DocumentNode != null)
+            {
+                //get the authenticity token from the login page
+                HtmlNode token = htmlDoc.DocumentNode.SelectNodes("//input[contains(concat(' ', @name, ' '), ' authenticity_token ')]").FirstOrDefault();
+                authenticity_token = token.Attributes["value"].Value;
+            }
             //Coursera requires a course name to get the initial cookie
 
-
+            //utf8=%E2%9C%93&authenticity_token=Il6RCc2oj8ndCPqvhnzVSZjp4FDrQWR79FBONHhvyUU%3D&uv_login=&return=&email=kevin.bourque%40gmail.com&password=%21rUkUS65w%24&button=
             // call the authenticator url
             StringBuilder postData = new StringBuilder();
+            postData.Append("utf8=%E2%9C%93&"); //UTF-8 checkmark
+            postData.Append("authenticity_token=" + authenticity_token + "&");
+            postData.Append("uv_login=&return=&");
             postData.Append("?email=" + HttpUtility.UrlEncode(Username) + "&");
             postData.Append("password=" + HttpUtility.UrlEncode(Password));
+            postData.Append("button=");
             _webConnectionStuff.Login(LOGIN_URL, LOGIN_URL, postData.ToString());
         }
 

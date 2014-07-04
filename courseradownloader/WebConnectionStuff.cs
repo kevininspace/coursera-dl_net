@@ -179,6 +179,7 @@ namespace courseradownloader
 
             HttpWebResponse webResponse = null;
             Cookie cookie = null;
+            Cookie cookie2 = null;
             try
             {
                 webResponse = (HttpWebResponse)webRequest.GetResponse();
@@ -195,11 +196,14 @@ namespace courseradownloader
 
                 CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(classURL));
                 cookie = cookieCollection["csrf_token"];
-                if (cookie == null)
+                cookie2 = cookieCollection["_csrf_token"];
+                if (cookie == null & cookie2 == null)
                 {
                     throw new Exception("Failed to find csrf cookie");
                 }
 
+                //HACK: Take the non-null version
+                cookie = cookie ?? cookie2;
             }
             catch (WebException e)
             {
@@ -219,6 +223,9 @@ namespace courseradownloader
             //CookieContainer postCookies = new CookieContainer(); //use new cookiejar
             Cookie crsfCookie = new Cookie("csrftoken", cookie.Value, "/", ".coursera.org");
 
+            /*
+             * cookie:__cfduid=d628b4437c2ce4f38d0e2f0d4855909961404230554509; _csrf_token=BAhJIjFJbDZSQ2Myb2o4bmRDUHF2aG56VlNaanA0RkRyUVdSNzlGQk9OSGh2eVVVPQY6BkVG--e06450ac38144c9316d376546e064c94cada5a84; __uvt=; _future_learn_session=S3I4QUZZNWFPS1hwdmNpVkRWeEZMaEtUbTNRcVErQnpNa3Y4Ni9MeUZOYUt6N3FTUUE0eEVWSVU3d3RRRitCUW5KY2pXRGFKYUNZRkxWUlk4ODJEVkxjYnFJOW9NVEFpZU8xQmk4ZG13d3U5S2FicXBjYitHQ2xvYlA1YTBwcnFDeE5sZTBNRWpmU2I1SnMzemxaeEpLS1JpQk5yczlJOWpDTHFlT2pxTTdReDlIbXNjNjNQS29YYkZnNUw0OFhEOXFxRDZKQ3pJRDdabk1zMWRPUCt0cVdzbzhPZC9jSVJMWHBibUtRLzZza1RCLzBmZ29tVVZ6NnptL2NkMDJyQ2xIQVcxZEVwNklmc0RNZTBFQUZmTEE9PS0tRkxJcjQxazkxd2xwQlRRSFZjWjZuZz09--5f3b46958f9b9199b6c28f2945a4d5581306b28a; _ga=GA1.2.1859077010.1404230559; uvts=1WgDdAwQaxVMkRdN
+             */
             HttpWebResponse postResponse = GetHttpWebResponse(loginUrl + postData, method: "POST", headers: newHeader, cookie: crsfCookie); //, cookiejar);
             if (postResponse.StatusCode == HttpStatusCode.Unauthorized)
             {
@@ -234,6 +241,28 @@ namespace courseradownloader
                 Console.WriteLine(string.Format("Failed to authenticate using {0}", postData));
                 throw new Exception(string.Format("Failed to authenticate using {0}", postData));
             }
+
+            /*
+             * FUTURELEARN RESPONSE
+             * cache-control:no-cache
+cf-ray:1447a9f1151c053a-YYZ
+content-type:text/html; charset=utf-8
+date:Fri, 04 Jul 2014 01:49:01 GMT
+location:https://www.futurelearn.com/courses/cancer-and-the-genomic-revolution/todo
+server:cloudflare-nginx
+set-cookie:_future_learn_session=SzZWUS9VRmtSUU5FYjQwZ0RqWmF2cEk5STd4eGdtS0I3bjdYY1NyOEhYdUxFMUFZdmZZOEhvcEM4akJzK3RuWnZNak9RNHhkTURZcW1aeGNPTUNrV3BaTUZkQVlZc3Vja2FqamxDUmNJa2Y2bUFtaWF2R3pleUI4T3lOcjJXR1ZUVmk1OXNlZjl4ZFRDVVBTKzlQVW9kVlRLS3lDb1l6dloyV1RzUGRHM2tXZFlxSnhHdXc0TzB1QlNlRy84cXJkdldrMDZONUw0ejhvMFFHQlhVM3NvVzFBZS9tUk5LSXFyczVpMVpMbmhZZFBYR013NjNpdjRhUnNpT0hmZEhYSjM5dnpsRE9EQ05mTmZ6dG1VN0wzSHc9PS0taWxMWTNjejAxOGw0dnNNUXUrSzNQZz09--02c3904cebd1a27fa010c4569a04cb28c2ed15dd; path=/; secure; HttpOnly
+set-cookie:session_last_active_at=BAhsKwcVCLZT--143cab77e1d41cea4983f60126a354c0b3a658a0; path=/; expires=Sun, 06 Jul 2014 01:49:09 -0000; secure; HttpOnly
+status:302 Found
+status:302 Found
+version:HTTP/1.1
+x-bypass:1
+x-content-type-options:nosniff
+x-frame-options:SAMEORIGIN
+x-request-id:e0d8a468-86e9-4760-8103-b25fe7771815
+x-runtime:0.115527
+x-ua-compatible:IE=edge
+x-xss-protection:1; mode=block
+             */
         }
     }
 }
