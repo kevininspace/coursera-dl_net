@@ -79,10 +79,13 @@
     <Compile Include="Coursera.cs" />
     <Compile Include="CourseraDownloader.cs" />
     <Compile Include="FutureLearn.cs" />
+    <Compile Include="MOOC.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="util.cs" />
-    <Compile Include="WebConnectionStuff.cs" />
+    <Compile Include="WebConnectionStuff.cs">
+      <SubType>Component</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

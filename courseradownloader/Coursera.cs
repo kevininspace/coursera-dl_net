@@ -113,7 +113,7 @@ namespace courseradownloader
         public override Course GetDownloadableContent(string courseName)
         {
             //get the lecture url
-            string course_url = lecture_url_from_name(courseName);
+            string course_url = LectureUrlFromName(courseName);
 
             Course courseContent = new Course(courseName);
             Console.WriteLine("* Collecting downloadable content from " + course_url);
@@ -283,7 +283,18 @@ namespace courseradownloader
             StringBuilder postData = new StringBuilder();
             postData.Append("?email=" + HttpUtility.UrlEncode(Username1) + "&");
             postData.Append("password=" + HttpUtility.UrlEncode(Password1));
-            _webConnectionStuff.Login(lecture_url_from_name(s), LOGIN_URL, postData.ToString());
+            Cookie cookieToken = _webConnectionStuff.GetCookieToken(LectureUrlFromName(s), "csrf_token");
+
+            Dictionary<string, string> newHeader = new Dictionary<string, string>
+            {
+                {"X-CSRFToken", cookieToken.Value}
+            };
+            
+            Cookie crsfCookie = new Cookie("csrftoken", cookieToken.Value, "/", ".coursera.org");
+
+            _webConnectionStuff.SetLoginCookie(LOGIN_URL, postData.ToString(), newHeader, crsfCookie, new Uri("https://class.coursera.org"));
+
+            _webConnectionStuff.Login(LectureUrlFromName(s), LOGIN_URL, postData.ToString());
         }
 
         public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
@@ -293,64 +304,6 @@ namespace courseradownloader
             
         }
 
-    }
-
-    abstract class MOOC : IMooc
-    {
-        protected int Max_path_part_len;
-        protected abstract string BASE_URL { get; }
-        public abstract string HOME_URL { get; }
-        protected abstract string LECTURE_URL { get; }
-
-        /// <summary>
-        /// Given the name of a course, return the video lecture url
-        /// </summary>
-        /// <param name="courseName"></param>
-        /// <returns></returns>
-        public virtual string lecture_url_from_name(string courseName)
-        {
-            return string.Format(LECTURE_URL, courseName);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="courseUrl"></param>
-        /// <param name="headers"></param>
-        /// <returns></returns>
-        public virtual string get_page(string courseUrl, Dictionary<string, string> headers = null)
-        {
-            HttpWebResponse r = WebConnectionStuff.GetResponse(url: courseUrl, headers: headers);
-            Stream responseStream = r.GetResponseStream();
-            //Encoding encoding = System.Text.Encoding.GetEncoding(r.ContentEncoding);
-            StreamReader reader = new StreamReader(responseStream);
-            string page = reader.ReadToEnd();
-            reader.Close();
-            responseStream.Close();
-            r.Close();
-            return page;
-        }
-
-        public virtual string TrimPathPart(string weekTopic)
-        {
-            //TODO: simple hack, something more elaborate needed
-            if (Max_path_part_len != 0 && weekTopic.Length > Max_path_part_len)
-            {
-                return weekTopic.Substring(0, Max_path_part_len);
-            }
-            else
-            {
-                return weekTopic;
-            }
-        }
-
-        
-
-
-        public abstract Course GetDownloadableContent(string courseName);
-        public abstract void Login();
-        public abstract void Login(string s);
-        public abstract void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent);
     }
 
     internal interface IDownloader

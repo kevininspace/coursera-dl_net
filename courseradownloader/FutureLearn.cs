@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
 using HtmlAgilityPack;
 
@@ -21,6 +22,7 @@ namespace courseradownloader
         private string Proxy;
         private bool Gzip_courses;
         private WebConnectionStuff _webConnectionStuff;
+        private CookieAwareWebClient client;
 
         public FutureLearn(string username, string password, string proxy, string parser, string ignorefiles, int mppl, bool gzipCourses, string wkfilter)
         {
@@ -79,19 +81,27 @@ namespace courseradownloader
 
         protected override string LECTURE_URL
         {
-            get { throw new NotImplementedException(); }
+            get { return HOME_URL + "/todo"; }
+        }
+
+        public override string LectureUrlFromName(string courseName)
+        {
+            //https://www.futurelearn.com/courses/cancer-and-the-genomic-revolution/todo/150
+            string lecutreUrl = string.Format(LECTURE_URL, courseName);
+            return lecutreUrl;
         }
 
         public override Course GetDownloadableContent(string courseName)
         {
             //get the lecture url
-            string course_url = lecture_url_from_name(courseName);
+            string course_url = LectureUrlFromName(courseName);
 
             Course courseContent = new Course(courseName);
             Console.WriteLine("* Collecting downloadable content from " + course_url);
 
             //get the course name, and redirect to the course lecture page
-            string vidpage = get_page(course_url);
+            //string vidpage = get_page(course_url);
+            string vidpage = client.DownloadString(course_url);
 
             HtmlDocument htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(vidpage);
@@ -106,26 +116,19 @@ namespace courseradownloader
                 if (htmlDoc.DocumentNode != null)
                 {
                     //# extract the weekly classes
-                    HtmlNodeCollection weeks = htmlDoc.DocumentNode.SelectNodes("//div[contains(concat(' ', @class, ' '), ' course-item-list-header ')]"); //"[@class='course-item-list-header']");
+                    HtmlNodeCollection weeks = htmlDoc.DocumentNode.SelectNodes("//li[contains(concat(' ', @class, ' '), ' todonav_item week ')]"); //"[@class='course-item-list-header']");
 
                     if (weeks != null)
                     {
-                        // for each weekly class
+                        // for each weekly class, go to the page and find the actual content there.
                         int i = 0;
                         foreach (HtmlNode week in weeks)
                         {
-                            HtmlNode h3 = week.SelectSingleNode("./h3");
+                            HtmlNode a = week.SelectSingleNode("//a");
 
-                            // sometimes the first week are the hidden sample lectures, catch this
-                            string h3txt;
-                            if (h3.InnerText.Trim().StartsWith("window.onload"))
-                            {
-                                h3txt = "Sample Lectures";
-                            }
-                            else
-                            {
-                                h3txt = h3.InnerText.Trim();
-                            }
+                            string h3txt = a.SelectSingleNode("//href").InnerText; //.InnerText.Trim();
+                            string weekLinks = client.DownloadString(h3txt);
+
                             string weekTopic = util.sanitise_filename(h3txt);
                             weekTopic = TrimPathPart(weekTopic);
 
@@ -243,29 +246,139 @@ namespace courseradownloader
 
         public override void Login()
         {
-            string loginPage = get_page(LOGIN_URL);
-            HtmlDocument htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(loginPage);
+            //_webConnectionStuff.MakeHttpWebCall(LOGIN_URL);
+            //HttpWebResponse httpWebResponse = _webConnectionStuff.PostResponse;
+            //CookieContainer cookieContainer = _webConnectionStuff.CookieJar;
 
-            string authenticity_token = "";
-            if (htmlDoc.DocumentNode != null)
-            {
-                //get the authenticity token from the login page
-                HtmlNode token = htmlDoc.DocumentNode.SelectNodes("//input[contains(concat(' ', @name, ' '), ' authenticity_token ')]").FirstOrDefault();
-                authenticity_token = token.Attributes["value"].Value;
-            }
-            //Coursera requires a course name to get the initial cookie
+            //string myStr;
+            //using (StreamReader reader = new StreamReader(httpWebResponse.GetResponseStream()))
+            //{
+            //    StreamReader sw = new StreamReader(reader.BaseStream);
+            //    myStr = sw.ReadToEnd();
+            //    // The string is currently stored in the 
+            //    // StreamWriters buffer. Flushing the stream will 
+            //    // force the string into the MemoryStream.
+            //    //sw.Flush();
 
-            //utf8=%E2%9C%93&authenticity_token=Il6RCc2oj8ndCPqvhnzVSZjp4FDrQWR79FBONHhvyUU%3D&uv_login=&return=&email=kevin.bourque%40gmail.com&password=%21rUkUS65w%24&button=
-            // call the authenticator url
-            StringBuilder postData = new StringBuilder();
-            postData.Append("utf8=%E2%9C%93&"); //UTF-8 checkmark
-            postData.Append("authenticity_token=" + authenticity_token + "&");
-            postData.Append("uv_login=&return=&");
-            postData.Append("?email=" + HttpUtility.UrlEncode(Username) + "&");
-            postData.Append("password=" + HttpUtility.UrlEncode(Password));
-            postData.Append("button=");
-            _webConnectionStuff.Login(LOGIN_URL, LOGIN_URL, postData.ToString());
+            //    // If we dispose the StreamWriter now, it will close 
+            //    // the BaseStream (which is our MemoryStream) which 
+            //    // will prevent us from reading from our MemoryStream
+            //    //DON'T DO THIS - sw.Dispose();
+
+            //    // The StreamReader will read from the current 
+            //    // position of the MemoryStream which is currently 
+            //    // set at the end of the string we just wrote to it. 
+            //    // We need to set the position to 0 in order to read 
+            //    // from the beginning.
+            //    //ms.Position = 0;
+            //    //var sr = new StreamReader(ms);
+            //    //myStr = sr.ReadToEnd();
+            //    //Console.WriteLine(myStr);
+            //}
+
+            //string tempFileName = Path.GetTempFileName();
+
+
+            ////Stream stringStream = new FileStream(tempFileName, FileMode.CreateNew);
+            ////httpWebResponse.GetResponseStream().CopyTo(stringStream);
+            ////stringStream.ToString();
+            ////string loginPage = get_page(LOGIN_URL);
+            //HtmlDocument htmlDoc = new HtmlDocument();
+            //htmlDoc.LoadHtml(myStr);
+
+            //string authenticity_token = "";
+            //if (htmlDoc.DocumentNode != null)
+            //{
+            //    //get the authenticity token from the login page
+            //    HtmlNode token = htmlDoc.DocumentNode.SelectNodes("//input[contains(concat(' ', @name, ' '), ' authenticity_token ')]").FirstOrDefault();
+            //    authenticity_token = token.Attributes["value"].Value;
+            //}
+
+            ////utf8=%E2%9C%93&authenticity_token=Il6RCc2oj8ndCPqvhnzVSZjp4FDrQWR79FBONHhvyUU%3D&uv_login=&return=&email=kevin.bourque%40gmail.com&password=%21rUkUS65w%24&button=
+            //// call the authenticator url
+            //StringBuilder postData = new StringBuilder();
+            //postData.Append("/utf8=%E2%9C%93&"); //UTF-8 checkmark
+            //postData.Append("authenticity_token=" + HttpUtility.UrlEncode(authenticity_token) + "&");
+            //postData.Append("uv_login=&return=&");
+            //postData.Append("email=" + HttpUtility.UrlEncode(Username) + "&");
+            //postData.Append("password=" + HttpUtility.UrlEncode(Password) + "&");
+            //postData.Append("remember_me=1&button=");
+
+            //UTF8Encoding utf8 = new UTF8Encoding();
+            //byte[] bytes = utf8.GetBytes(postData.ToString());
+
+
+            /*TEST
+             */
+            CookieContainer cookieJar = new CookieContainer();
+            client = new CookieAwareWebClient(cookieJar);
+            client.Referer = LOGIN_URL;
+
+            // the website sets some cookie that is needed for login, and as well the 'authenticity_token' is always different
+            string response = client.DownloadString(LOGIN_URL);
+
+            // parse the 'authenticity_token' and cookie is auto handled by the cookieContainer
+            string token1 = Regex.Match(response, "authenticity_token.+?value=\"(.+?)\"").Groups[1].Value;
+            StringBuilder postData1 = new StringBuilder();
+            postData1.Append("/utf8=%E2%9C%93&"); //UTF-8 checkmark
+            postData1.Append("authenticity_token=" + HttpUtility.UrlEncode(token1) + "&");
+            postData1.Append("uv_login=&return=&");
+            postData1.Append("email=" + HttpUtility.UrlEncode(Username) + "&");
+            postData1.Append("password=" + HttpUtility.UrlEncode(Password) + "&");
+            postData1.Append("remember_me=1&button=");
+            //string postData1 = string.Format("utf8=%E2%9C%93&authenticity_token={0}&user%5Blogin%5D=USERNAME&user%5Bpassword%5D=PASSWORD&user%5Boffset%5D=5.5&user%5Bremember_me%5D=0&button=", token);
+
+
+            //WebClient.UploadValues is equivalent of Http url-encode type post
+            client.Method = "POST";
+            response = client.UploadString("https://www.futurelearn.com/sign-in", postData1.ToString());
+
+            //Now get the goods (cookies should be set!
+
+
+            //i am getting invalid user/pass, but i am sure it will work fine with normal user/password
+
+
+            /*END TEST
+             */
+
+            /*
+             * FUTURELEARN RESPONSE
+             * cache-control:no-cache
+             * cf-ray:1447a9f1151c053a-YYZ
+             * content-type:text/html; charset=utf-8
+             * date:Fri, 04 Jul 2014 01:49:01 GMT
+             * location:https://www.futurelearn.com/courses/cancer-and-the-genomic-revolution/todo
+             * server:cloudflare-nginx
+             * set-cookie:_future_learn_session=SzZWUS9VRmtSUU5FYjQwZ0RqWmF2cEk5STd4eGdtS0I3bjdYY1NyOEhYdUxFMUFZdmZZOEhvcEM4akJzK3RuWnZNak9RNHhkTURZcW1aeGNPTUNrV3BaTUZkQVlZc3Vja2FqamxDUmNJa2Y2bUFtaWF2R3pleUI4T3lOcjJXR1ZUVmk1OXNlZjl4ZFRDVVBTKzlQVW9kVlRLS3lDb1l6dloyV1RzUGRHM2tXZFlxSnhHdXc0TzB1QlNlRy84cXJkdldrMDZONUw0ejhvMFFHQlhVM3NvVzFBZS9tUk5LSXFyczVpMVpMbmhZZFBYR013NjNpdjRhUnNpT0hmZEhYSjM5dnpsRE9EQ05mTmZ6dG1VN0wzSHc9PS0taWxMWTNjejAxOGw0dnNNUXUrSzNQZz09--02c3904cebd1a27fa010c4569a04cb28c2ed15dd; path=/; secure; HttpOnly
+             * set-cookie:session_last_active_at=BAhsKwcVCLZT--143cab77e1d41cea4983f60126a354c0b3a658a0; path=/; expires=Sun, 06 Jul 2014 01:49:09 -0000; secure; HttpOnly
+             * status:302 Found
+             * status:302 Found
+             * version:HTTP/1.1
+             * x-bypass:1
+             * x-content-type-options:nosniff
+             * x-frame-options:SAMEORIGIN
+             * x-request-id:e0d8a468-86e9-4760-8103-b25fe7771815
+             * x-runtime:0.115527
+             * x-ua-compatible:IE=edge
+             * x-xss-protection:1; mode=block
+             */
+
+            //Dictionary<string, string> newHeader = new Dictionary<string, string>
+            //{
+            //    {"set-cookie", csrfToken.Value}
+
+            //};
+
+            //Cookie crsfCookie = new Cookie("_csrf_token", csrfToken.Value, "/", ".futurelearn.com");
+            //Cookie sessionCookie = new Cookie("_future_learn_session", session.Value, "/", ".futurelearn.com");
+
+            //_webConnectionStuff.SetLoginCookie(LOGIN_URL, postData.ToString(), newHeader, csrfToken, new Uri("https://www.futurelearn.com"));
+
+
+            //File.Delete(tempFileName);
+
+            //_webConnectionStuff.MakeHttpWebCall(LOGIN_URL + postData, null, "POST", cookieContainer, true, bytes);
         }
 
         public override void Login(string s)

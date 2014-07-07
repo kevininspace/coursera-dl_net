@@ -259,7 +259,7 @@ namespace courseradownloader
             Console.WriteLine(" - Downloading lecture/syllabus pages");
 
             download(string.Format(_courseraCourse.HOME_URL, courseName), courseDir, "index.html");
-            download(string.Format(_courseraCourse.lecture_url_from_name(courseName)), courseDir, "lectures.html");
+            download(string.Format(_courseraCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
 
             try
             {
