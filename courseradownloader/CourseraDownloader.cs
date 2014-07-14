@@ -82,7 +82,7 @@ namespace courseradownloader
         /// <summary>
         /// Download the url to the given filename
         /// </summary>
-        public void download(string url, string targetDir = ".", string targetFname = null)
+        public void Download(string url, string targetDir = ".", string targetFname = null)
         {
             using (HttpWebResponse response = WebConnectionStuff.GetResponse(url, stream: true))
             {
@@ -258,8 +258,8 @@ namespace courseradownloader
             //download the standard pages
             Console.WriteLine(" - Downloading lecture/syllabus pages");
 
-            download(string.Format(_courseraCourse.HOME_URL, courseName), courseDir, "index.html");
-            download(string.Format(_courseraCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
+            Download(string.Format(_courseraCourse.HOME_URL, courseName), courseDir, "index.html");
+            Download(string.Format(_courseraCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
 
             try
             {
@@ -311,7 +311,7 @@ namespace courseradownloader
                     {
                         try
                         {
-                            download(resourceLink.Key, clsdir, resourceLink.Value);
+                            Download(resourceLink.Key, clsdir, resourceLink.Value);
                         }
                         catch (Exception e)
                         {

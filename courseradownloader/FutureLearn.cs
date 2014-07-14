@@ -10,7 +10,7 @@ using HtmlAgilityPack;
 
 namespace courseradownloader
 {
-    class FutureLearn : MOOC
+    class FutureLearn : Mooc
     {
         string LOGIN_URL = "https://www.futurelearn.com/sign-in";
         private string AUTH_URL;

@@ -10,7 +10,7 @@ using HtmlAgilityPack;
 
 namespace courseradownloader
 {
-    class Coursera : MOOC
+    class Coursera : Mooc
     {
 
         private string Username;
@@ -312,7 +312,7 @@ namespace courseradownloader
 
     internal interface IDownloader
     {
-        void download(string format, string targetDir, string targetFname);
+        void Download(string format, string targetDir, string targetFname);
     }
 
     internal abstract class Downloader

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace courseradownloader
 {
-    abstract class MOOC : IMooc
+    abstract class Mooc : IMooc
     {
         protected int Max_path_part_len;
         protected abstract string BASE_URL { get; }

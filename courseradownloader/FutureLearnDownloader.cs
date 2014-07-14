@@ -43,8 +43,8 @@ namespace courseradownloader
             //download the standard pages
             Console.WriteLine(" - Downloading lecture/syllabus pages");
 
-            download(string.Format(_futureleanCourse.HOME_URL, courseName), courseDir, "index.html");
-            download(string.Format(_futureleanCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
+            Download(string.Format(_futureleanCourse.HOME_URL, courseName), courseDir, "index.html");
+            Download(string.Format(_futureleanCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
 
             /*
             // TextFieldParser is in the Microsoft.VisualBasic.FileIO namespace.
@@ -127,7 +127,7 @@ namespace courseradownloader
 
                         try
                         {
-                            download(resourceLink.Key, wkdir, resourceLink.Value);
+                            Download(resourceLink.Key, wkdir, resourceLink.Value);
                         }
                         catch (Exception e)
                         {
@@ -162,7 +162,7 @@ namespace courseradownloader
 
 
 
-        public void download(string url, string targetDir, string targetFname)
+        public void Download(string url, string targetDir, string targetFname)
         {
             string fname = targetFname.RemoveColon();
 
