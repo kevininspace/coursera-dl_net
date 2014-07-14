@@ -22,7 +22,7 @@ namespace courseradownloader
         private string Proxy;
         private bool Gzip_courses;
         private WebConnectionStuff _webConnectionStuff;
-        private CookieAwareWebClient client;
+        public CookieAwareWebClient _client;
 
         public FutureLearn(string username, string password, string proxy, string parser, string ignorefiles, int mppl, bool gzipCourses, string wkfilter)
         {
@@ -93,6 +93,7 @@ namespace courseradownloader
 
         public override Course GetDownloadableContent(string courseName)
         {
+
             //get the lecture url
             string course_url = LectureUrlFromName(courseName);
 
@@ -101,7 +102,7 @@ namespace courseradownloader
 
             //get the course name, and redirect to the course lecture page
             //string vidpage = get_page(course_url);
-            string vidpage = client.DownloadString(course_url);
+            string vidpage = _client.DownloadString(course_url);
 
             HtmlDocument htmlDoc = new HtmlDocument();
             htmlDoc.LoadHtml(vidpage);
@@ -124,111 +125,70 @@ namespace courseradownloader
                         int i = 0;
                         foreach (HtmlNode week in weeks)
                         {
-                            HtmlNode a = week.SelectSingleNode("//a");
+                            HtmlNode a = week.SelectSingleNode("a");
 
-                            string h3txt = a.SelectSingleNode("//href").InnerText; //.InnerText.Trim();
-                            string weekLinks = client.DownloadString(h3txt);
+                            string weekLink = a.Attributes["href"].Value; //.InnerText.Trim();
+                            string weekPage = _client.DownloadString(BASE_URL + weekLink);
 
-                            string weekTopic = util.sanitise_filename(h3txt);
+                            HtmlDocument weekDoc = new HtmlDocument();
+                            weekDoc.LoadHtml(weekPage);
+
+                            HtmlNode h3txt = weekDoc.DocumentNode.SelectSingleNode("//h3[contains(concat(' ', @class, ' '), ' headline ')]");
+                            string weekTopic = util.sanitise_filename(h3txt.InnerText.Trim());
                             weekTopic = TrimPathPart(weekTopic);
-
+                            
                             Week weeklyContent = new Week(weekTopic);
                             weeklyContent.WeekNum = i++;
 
-                            //get all the classes for the week
-                            HtmlNode ul = week.NextSibling;
-                            HtmlNodeCollection lis = ul.SelectNodes("li");
-
-                            //for each class (= lecture)
-                            int j = 0;
-                            foreach (HtmlNode li in lis)
+                            HtmlNodeCollection weekSteps = weekDoc.DocumentNode.SelectNodes("//li[contains(concat(' ', @class, ' '), ' step ')]");
+                            foreach (HtmlNode weekStep in weekSteps)
                             {
                                 Dictionary<string, string> resourceLinks = new Dictionary<string, string>();
 
-                                //the name of this class
-                                string className = li.SelectSingleNode("a").InnerText.Trim();
+                                HtmlNode weekStepAnchor = weekStep.SelectSingleNode("a");
 
-                                className.RemoveColon();
-                                className = util.sanitise_filename(className);
-                                className = TrimPathPart(className);
+                                string stepNumber = weekStepAnchor.SelectSingleNode("span/div").InnerText;
+                                string stepName = weekStepAnchor.SelectSingleNode("div/div/h5").InnerText;
+                                string stepType = weekStepAnchor.SelectSingleNode("div/div/span").InnerText;
+                                string weekNumber = stepNumber.Trim().Split('.')[0].PadLeft(2, '0');
+                                string videoNumber = stepNumber.Trim().Split('.')[1].PadLeft(2, '0');
 
-                                //collect all the resources for this class (ppt, pdf, mov, ..)
-                                HtmlNodeCollection classResources = li.SelectNodes("./div[contains(concat(' ', @class, ' '), ' course-lecture-item-resource ')]/a");
-                                foreach (HtmlNode classResource in classResources)
+                                stepName.RemoveColon();
+                                stepName = util.sanitise_filename(stepName);
+                                stepName = TrimPathPart(stepName);
+
+                                string classname = string.Join("-", weekNumber, videoNumber, stepName);
+
+                                string weekStepAnchorHref = weekStepAnchor.Attributes["href"].Value;
+
+
+
+
+                                if (stepType == "video")
                                 {
-                                    //get the hyperlink itself
-                                    string h = util.clean_url(classResource.GetAttributeValue("href", ""));
-                                    if (string.IsNullOrEmpty(h))
-                                    {
-                                        continue;
-                                    }
-                                    //Sometimes the raw, uncompresed source videos are available as
-                                    //well. Don't download them as they are huge and available in
-                                    //compressed form anyway.
-                                    if (h.Contains("source_videos"))
-                                    {
-                                        Console.WriteLine("   - will skip raw source video " + h);
-                                    }
-                                    else
-                                    {
-                                        //Dont set a filename here, that will be inferred from the week titles
-                                        resourceLinks.Add(h, string.Empty);
-                                    }
+                                    string weekStepVideoPage = _client.DownloadString(BASE_URL + weekStepAnchorHref);
+                                    HtmlDocument weekStepVideoDoc = new HtmlDocument();
+                                    weekStepVideoDoc.LoadHtml(weekStepVideoPage);
+                                    HtmlNode videoObject = weekStepVideoDoc.DocumentNode.SelectSingleNode("//source");
+                                        //"[contains(concat(' ', @name, ' '), ' flashvars ')]");
+                                    string vidUrl = videoObject.Attributes["src"].Value;
+
+                                    string fn = Path.ChangeExtension(classname, "mp4");
+                                    resourceLinks.Add("http:" + vidUrl, fn);
+                                }
+                                else
+                                {
+                                    resourceLinks.Add(BASE_URL + weekStepAnchorHref, "index.html");
                                 }
 
-                                //check if the video is included in the resources, if not, try do download it directly
-                                bool containsMp4 = resourceLinks.Any(s => s.Key.Contains(".mp4"));
-                                if (!containsMp4)
-                                {
-                                    HtmlNode ll = li.SelectSingleNode("./a[contains(concat(' ', @class, ' '), ' lecture-link ')]");
-                                    string lurl = util.clean_url(ll.GetAttributeValue("data-modal-iframe", ""));
-                                    try
-                                    {
-                                        //HttpWebResponse httpWebResponse = get_response(lurl);
-                                        //string html = new WebClient().DownloadString(lurl);
-                                        WebClient wc = new WebClient();
-                                        wc.DownloadStringCompleted += WcOnDownloadStringCompleted;
-                                        wc.DownloadStringAsync(new Uri(lurl));
-                                        System.Threading.Thread.Sleep(3000);
-                                        wc.CancelAsync();
-
-
-                                        string page = get_page(lurl);
-                                        HtmlDocument bb = new HtmlDocument();
-
-                                        bb.LoadHtml(lurl);
-
-                                        //string page = get_page(lurl);
-                                        //HtmlWeb bb = new HtmlWeb();
-                                        //HtmlDocument doc = bb.Load(lurl);
-                                        HtmlNode selectSingleNode = bb.DocumentNode.SelectSingleNode("div"); //"[contains(concat(' ', @type, ' '), 'video/mp4')]");
-                                        if (selectSingleNode.OuterHtml.Length < 1)
-                                        {
-                                            Console.WriteLine(string.Format(" Warning: Failed to find video for {0}", className));
-                                        }
-                                        else
-                                        {
-                                            string vurl = util.clean_url(selectSingleNode.SelectSingleNode("src").OuterHtml);
-
-                                            //build the matching filename
-                                            string fn = Path.ChangeExtension(className, "mp4");
-                                            resourceLinks.Add(vurl, fn);
-                                        }
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        // sometimes there is a lecture without a vidio (e.g.,
-                                        // genes-001) so this can happen.
-                                        Console.WriteLine(string.Format(" Warning: failed to open the direct video link {0}: {1}", lurl, e));
-                                    }
-                                }
-                                ClassSegment weekClasses = new ClassSegment(className);
-                                weekClasses.ClassNum = j++;
+                                ClassSegment weekClasses = new ClassSegment(classname);
+                                weekClasses.ClassNum = i++;
                                 weekClasses.ResourceLinks = resourceLinks;
 
                                 weeklyContent.ClassSegments.Add(weekClasses);
 
                             }
+
                             courseContent.Weeks.Add(weeklyContent);
 
                         }
@@ -237,11 +197,6 @@ namespace courseradownloader
                 }
             }
             return null;
-        }
-
-        private void WcOnDownloadStringCompleted(object sender, DownloadStringCompletedEventArgs e)
-        {
-            throw new NotImplementedException();
         }
 
         public override void Login()
@@ -311,11 +266,11 @@ namespace courseradownloader
             /*TEST
              */
             CookieContainer cookieJar = new CookieContainer();
-            client = new CookieAwareWebClient(cookieJar);
-            client.Referer = LOGIN_URL;
+            _client = new CookieAwareWebClient(cookieJar);
+            _client.Referer = LOGIN_URL;
 
             // the website sets some cookie that is needed for login, and as well the 'authenticity_token' is always different
-            string response = client.DownloadString(LOGIN_URL);
+            string response = _client.DownloadString(LOGIN_URL);
 
             // parse the 'authenticity_token' and cookie is auto handled by the cookieContainer
             string token1 = Regex.Match(response, "authenticity_token.+?value=\"(.+?)\"").Groups[1].Value;
@@ -330,8 +285,11 @@ namespace courseradownloader
 
 
             //WebClient.UploadValues is equivalent of Http url-encode type post
-            client.Method = "POST";
-            response = client.UploadString("https://www.futurelearn.com/sign-in", postData1.ToString());
+            _client.Method = "POST";
+            response = _client.UploadString("https://www.futurelearn.com/sign-in", postData1.ToString());
+
+            //Now that we've logged in, set the Method back to "GET"
+            _client.Method = "GET";
 
             //Now get the goods (cookies should be set!
 
@@ -383,26 +341,13 @@ namespace courseradownloader
 
         public override void Login(string s)
         {
-
+            Login();
         }
 
-        public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
+        public override void Download(string courseName, string destDir, bool reverse, bool gzipCourses, Course courseContent)
         {
             FutureLearnDownloader cd = new FutureLearnDownloader(this);
-            cd.DownloadCourse(courseName, destDir, b, gzipCourses, courseContent);
-        }
-    }
-
-    internal class FutureLearnDownloader
-    {
-        public FutureLearnDownloader(FutureLearn futureLearn)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void DownloadCourse(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
-        {
-            throw new NotImplementedException();
+            cd.DownloadCourse(courseName, destDir, reverse, gzipCourses, courseContent);
         }
     }
 }

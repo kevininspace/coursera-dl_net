@@ -117,9 +117,19 @@ namespace courseradownloader
             }
 
             // download the content
-            foreach (Course course in coursera.Courses)
+            if (coursera != null)
             {
-                coursera.Download(course.CourseName, dest_dir, false, gzip_courses, course);
+                foreach (Course course in coursera.Courses)
+                {
+                    coursera.Download(course.CourseName, dest_dir, false, gzip_courses, course);
+                }
+            }
+            if (futureLearn != null)
+            {
+                foreach (Course course in futureLearn.Courses)
+                {
+                    futureLearn.Download(course.CourseName, dest_dir, false, gzip_courses, course);
+                }
             }
         }
         /*

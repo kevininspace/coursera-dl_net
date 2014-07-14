@@ -339,11 +339,11 @@ namespace courseradownloader
                 requestStream.Write(bytes, 0, bytes.Length);
                 postResponse = (HttpWebResponse)postRequest.GetResponse();
                 requestStream.Close();
-                
+
             }
             else
             {
-                postResponse = (HttpWebResponse) postRequest.GetResponse();
+                postResponse = (HttpWebResponse)postRequest.GetResponse();
             }
 
             CookieCollection iterateOverCookies = IterateOverCookies(postResponse);
@@ -385,6 +385,7 @@ namespace courseradownloader
             WebRequest request = base.GetWebRequest(address);
             if (request is HttpWebRequest)
             {
+                (request as HttpWebRequest).AllowAutoRedirect = true;
                 (request as HttpWebRequest).CookieContainer = this.CookieContainer;
                 (request as HttpWebRequest).ServicePoint.Expect100Continue = false;
                 (request as HttpWebRequest).UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:18.0) Gecko/20100101 Firefox/18.0";
@@ -400,14 +401,24 @@ namespace courseradownloader
                 }
 
             }
-            HttpWebRequest httpRequest = (HttpWebRequest)request;
-            httpRequest.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            return httpRequest;
+
+            if (request.GetType() == typeof(FileWebRequest))
+            {
+                FileWebRequest fileRequest = (FileWebRequest)request;
+                return fileRequest;
+            }
+            else
+            {
+                HttpWebRequest httpRequest = (HttpWebRequest)request;
+                httpRequest.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                return httpRequest;
+            }
         }
 
         protected override WebResponse GetWebResponse(WebRequest request)
         {
             WebResponse response = base.GetWebResponse(request);
+
             String setCookieHeader = response.Headers[HttpResponseHeader.SetCookie];
 
             if (setCookieHeader != null)
@@ -415,11 +426,11 @@ namespace courseradownloader
                 //do something if needed to parse out the cookie.
                 try
                 {
-                    if (setCookieHeader != null)
-                    {
-                        Cookie cookie = new Cookie(); //create cookie
-                        this.CookieContainer.Add(cookie);
-                    }
+
+                    Cookie cookie = new Cookie();
+                    //create cookie
+                    this.CookieContainer.Add(cookie);
+
                 }
                 catch (Exception)
                 {

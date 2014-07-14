@@ -49,7 +49,7 @@ namespace courseradownloader
             normalize = HtmlAgilityPack.HtmlEntity.DeEntitize(normalize);
             
             //remove any characters not in the whitelist
-            normalize = Regex.Replace(normalize, @"[^\w\-\(\)\[\]\., \:]", @"").Trim();
+            normalize = Regex.Replace(normalize, @"[^\w\-\(\)\., ]", @"").Trim(); //[^\w\-\(\)\[\]\., \:]
             normalize = normalize.RemoveColon();
             /*TODO
              * # ensure it is within a sane maximum

@@ -79,6 +79,7 @@
     <Compile Include="Coursera.cs" />
     <Compile Include="CourseraDownloader.cs" />
     <Compile Include="FutureLearn.cs" />
+    <Compile Include="FutureLearnDownloader.cs" />
     <Compile Include="MOOC.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
