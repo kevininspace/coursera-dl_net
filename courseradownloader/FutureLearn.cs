@@ -349,6 +349,7 @@ namespace courseradownloader
 
         public override void Download(string courseName, string destDir, bool reverse, bool gzipCourses, Course courseContent)
         {
+            MakeCourseList(courseContent, Path.Combine(destDir, courseName));
             FutureLearnDownloader cd = new FutureLearnDownloader(this);
             cd.DownloadCourse(courseName, destDir, reverse, gzipCourses, courseContent);
         }

@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Proxies;
-using System.Security.Cryptography;
-using System.Text;
 using NDesk.Options;
 
 namespace courseradownloader

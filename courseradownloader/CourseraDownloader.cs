@@ -14,7 +14,7 @@ namespace courseradownloader
     /// Class to download content (videos, lecture notes, ...) from coursera.org for use offline.
     /// Inspired by https://github.com/dgorissen/coursera-dl
     /// </summary>
-    internal class CourseraDownloader : IDownloader
+    internal class CourseraDownloader : Downloader, IDownloader
     {
         private Coursera _courseraCourse;
 

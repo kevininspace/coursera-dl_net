@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Web;
-using System.Web.UI;
 using HtmlAgilityPack;
 
 namespace courseradownloader
@@ -142,6 +139,9 @@ namespace courseradownloader
                         int i = 0;
                         foreach (HtmlNode week in weeks)
                         {
+                            Console.WriteLine();
+                            Console.WriteLine("* Week " + i + " of " + weeks.Count);
+
                             HtmlNode h3 = week.SelectSingleNode("./h3");
 
                             // sometimes the first week are the hidden sample lectures, catch this
@@ -168,6 +168,8 @@ namespace courseradownloader
                             int j = 0;
                             foreach (HtmlNode li in lis)
                             {
+                                util.DrawProgressBar(j, lis.Count, 20, '=');
+
                                 Dictionary<string, string> resourceLinks = new Dictionary<string, string>();
 
                                 //the name of this class
@@ -197,7 +199,7 @@ namespace courseradownloader
                                     else
                                     {
                                         //Dont set a filename here, that will be inferred from the week titles
-                                        resourceLinks.Add(h, string.Empty);
+                                        resourceLinks.Add(h, className);
                                     }
                                 }
 
@@ -300,6 +302,7 @@ namespace courseradownloader
 
         public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
         {
+            MakeCourseList(courseContent, Path.Combine(destDir, courseName));
             CourseraDownloader cd = new CourseraDownloader(this);
             cd.DownloadCourse(courseName, destDir, b, gzipCourses, courseContent);
             
@@ -310,6 +313,10 @@ namespace courseradownloader
     internal interface IDownloader
     {
         void download(string format, string targetDir, string targetFname);
+    }
+
+    internal abstract class Downloader
+    {
     }
 
     internal interface IMooc

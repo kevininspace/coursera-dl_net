@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Text;
 
 namespace courseradownloader
 {
@@ -60,7 +63,29 @@ namespace courseradownloader
             }
         }
 
-        
+        internal static void MakeCourseList(Course courseContent, string courseDir)
+        {
+            StringBuilder csv = new StringBuilder();
+            csv.Append("Week Number, Class Number, Class Name, Link, Name");
+            csv.Append(Environment.NewLine);
+            foreach (Week week in courseContent.Weeks)
+            {
+                foreach (ClassSegment classSegment in week.ClassSegments)
+                {
+                    string key = classSegment.ResourceLinks.Keys.First();
+                    string val = classSegment.ResourceLinks.Values.First();
+
+                    string newLine = string.Format("{0},{1},{2},{3},{4}{5}", week.WeekNum, classSegment.ClassNum,
+                        classSegment.ClassName, key, val, Environment.NewLine);
+                    csv.Append(newLine);
+                }
+            }
+            Directory.CreateDirectory(courseDir);
+
+            //File.Create(Path.Combine(courseDir, "content.csv")).Close();
+
+            File.WriteAllText(Path.Combine(courseDir, "content.csv"), csv.ToString());
+        }
 
 
         public abstract Course GetDownloadableContent(string courseName);

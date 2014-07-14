@@ -2,15 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using Microsoft.VisualBasic.FileIO;
-using Pechkin;
-using Pechkin.Synchronized;
 using SevenZip;
 
 namespace courseradownloader
 {
-    internal class FutureLearnDownloader : IDownloader
+    internal class FutureLearnDownloader : Downloader, IDownloader
     {
         private FutureLearn _futureleanCourse;
 
@@ -50,22 +46,7 @@ namespace courseradownloader
             download(string.Format(_futureleanCourse.HOME_URL, courseName), courseDir, "index.html");
             download(string.Format(_futureleanCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
 
-            StringBuilder csv = new StringBuilder();
-            foreach (Week week in courseContent.Weeks)
-            {
-                foreach (ClassSegment classSegment in week.ClassSegments)
-                {
-                    string key = classSegment.ResourceLinks.Keys.First();
-                    string val = classSegment.ResourceLinks.Values.First();
-                    csv.Append("Week Number, Class Number, Class Name, Link, Name");
-                    string newLine = string.Format("{0},{1},{2},{3},{4}{5}", week.WeekNum, classSegment.ClassNum, classSegment.ClassName, key, val, Environment.NewLine);
-                    csv.Append(newLine);
-                }
-            }
-
-            //after your loop
-            File.WriteAllText(Path.Combine(courseDir, "content.csv"), csv.ToString());
-
+            /*
             // TextFieldParser is in the Microsoft.VisualBasic.FileIO namespace.
             using (TextFieldParser parser = new TextFieldParser(Path.Combine(courseDir, "content.csv")))
             {
@@ -97,6 +78,7 @@ namespace courseradownloader
                     //}
                 }
             }
+             */
 
             //now download the actual content (video's, lecture notes, ...)
             foreach (Week week in courseContent.Weeks)
@@ -177,6 +159,8 @@ namespace courseradownloader
 
             //
         }
+
+
 
         public void download(string url, string targetDir, string targetFname)
         {
