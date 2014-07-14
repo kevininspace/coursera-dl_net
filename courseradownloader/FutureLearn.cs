@@ -122,9 +122,12 @@ namespace courseradownloader
                     if (weeks != null)
                     {
                         // for each weekly class, go to the page and find the actual content there.
-                        int i = 0;
+                        int i = 1;
                         foreach (HtmlNode week in weeks)
                         {
+                            Console.WriteLine();
+                            Console.WriteLine("* Week " + i + " of " + weeks.Count);
+
                             HtmlNode a = week.SelectSingleNode("a");
 
                             string weekLink = a.Attributes["href"].Value; //.InnerText.Trim();
@@ -141,8 +144,11 @@ namespace courseradownloader
                             weeklyContent.WeekNum = i++;
 
                             HtmlNodeCollection weekSteps = weekDoc.DocumentNode.SelectNodes("//li[contains(concat(' ', @class, ' '), ' step ')]");
+                            int j = 1;
                             foreach (HtmlNode weekStep in weekSteps)
                             {
+                                util.DrawProgressBar(j, weekSteps.Count, 20, '=');
+
                                 Dictionary<string, string> resourceLinks = new Dictionary<string, string>();
 
                                 HtmlNode weekStepAnchor = weekStep.SelectSingleNode("a");
@@ -161,9 +167,6 @@ namespace courseradownloader
 
                                 string weekStepAnchorHref = weekStepAnchor.Attributes["href"].Value;
 
-
-
-
                                 if (stepType == "video")
                                 {
                                     string weekStepVideoPage = _client.DownloadString(BASE_URL + weekStepAnchorHref);
@@ -178,11 +181,11 @@ namespace courseradownloader
                                 }
                                 else
                                 {
-                                    resourceLinks.Add(BASE_URL + weekStepAnchorHref, "index.html");
+                                    resourceLinks.Add(BASE_URL + weekStepAnchorHref, Path.ChangeExtension(classname, "html")); // "index.html");
                                 }
 
                                 ClassSegment weekClasses = new ClassSegment(classname);
-                                weekClasses.ClassNum = i++;
+                                weekClasses.ClassNum = j++;
                                 weekClasses.ResourceLinks = resourceLinks;
 
                                 weeklyContent.ClassSegments.Add(weekClasses);

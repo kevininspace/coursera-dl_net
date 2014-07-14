@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>Pechkin.Synchronized</id>
+    <version>0.5.8.1</version>
+    <title>Pechkin.Synchronized</title>
+    <authors>Gman</authors>
+    <owners>Gman</owners>
+    <licenseUrl>http://creativecommons.org/licenses/by/3.0/</licenseUrl>
+    <projectUrl>https://github.com/gmanny/Pechkin</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Thread safe wrapper for Pechkin Html to PDF library. Allows your multiple threads to use Pechkin, while actually working with it from only one thread.</description>
+    <releaseNotes>Moved SynchronizedPechkin from DispatcherThread to SynchronizedDispatcherThread eliminating dependency on WPF libraries. 0.5.8.0 is just a release to notify that bug was fixed. 0.5.8.1 added license and copyright cor the copies to be legal.</releaseNotes>
+    <copyright>Copyright 2012 Slava Kolobaev</copyright>
+    <tags>Html PDF Wrapper Converter Webkit Synchronous Blocking</tags>
+    <dependencies>
+      <dependency id="Pechkin" version="0.5.8.1" />
+      <dependency id="Common.Logging" version="2.1.1" />
+    </dependencies>
+  </metadata>
+</package>

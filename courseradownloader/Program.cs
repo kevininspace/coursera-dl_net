@@ -75,7 +75,7 @@ namespace courseradownloader
             if (!unparsedArgs.Contains("mppl"))
             {
                 // if mppl is not specified on windows set manually
-                mppl = 100;
+                mppl = 260;
                 Console.WriteLine("Maximum length of a path component set to {0}", mppl);
             }
 

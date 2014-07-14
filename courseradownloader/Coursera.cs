@@ -282,7 +282,8 @@ namespace courseradownloader
             // call the authenticator url
             StringBuilder postData = new StringBuilder();
             postData.Append("?email=" + HttpUtility.UrlEncode(Username1) + "&");
-            postData.Append("password=" + HttpUtility.UrlEncode(Password1));
+            postData.Append("password=" + HttpUtility.UrlEncode(Password1) + "&");
+            postData.Append("webrequest=true");
             Cookie cookieToken = _webConnectionStuff.GetCookieToken(LectureUrlFromName(s), "csrf_token");
 
             Dictionary<string, string> newHeader = new Dictionary<string, string>

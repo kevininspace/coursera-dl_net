@@ -45,6 +45,13 @@ namespace courseradownloader
             //TODO: simple hack, something more elaborate needed
             if (Max_path_part_len != 0 && weekTopic.Length > Max_path_part_len)
             {
+                if (Path.HasExtension(weekTopic))
+                {
+                    string extension = Path.GetExtension(weekTopic);
+                    string substring = weekTopic.Substring(0, Max_path_part_len - extension.Length);
+                    return Path.ChangeExtension(substring, extension);
+                }
+
                 return weekTopic.Substring(0, Max_path_part_len);
             }
             else

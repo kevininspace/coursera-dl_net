@@ -2,6 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using Microsoft.VisualBasic.FileIO;
+using Pechkin;
+using Pechkin.Synchronized;
 using SevenZip;
 
 namespace courseradownloader
@@ -46,14 +50,53 @@ namespace courseradownloader
             download(string.Format(_futureleanCourse.HOME_URL, courseName), courseDir, "index.html");
             download(string.Format(_futureleanCourse.LectureUrlFromName(courseName)), courseDir, "lectures.html");
 
-            //try
-            //{
-            //    DownloadAbout(courseName, courseDir, _courseraCourse.ABOUT_URL);
-            //}
-            //catch (Exception e)
-            //{
-            //    Console.WriteLine("Warning: failed to download about file: {0}", e.Message);
-            //}
+            StringBuilder csv = new StringBuilder();
+            foreach (Week week in courseContent.Weeks)
+            {
+                foreach (ClassSegment classSegment in week.ClassSegments)
+                {
+                    string key = classSegment.ResourceLinks.Keys.First();
+                    string val = classSegment.ResourceLinks.Values.First();
+                    csv.Append("Week Number, Class Number, Class Name, Link, Name");
+                    string newLine = string.Format("{0},{1},{2},{3},{4}{5}", week.WeekNum, classSegment.ClassNum, classSegment.ClassName, key, val, Environment.NewLine);
+                    csv.Append(newLine);
+                }
+            }
+
+            //after your loop
+            File.WriteAllText(Path.Combine(courseDir, "content.csv"), csv.ToString());
+
+            // TextFieldParser is in the Microsoft.VisualBasic.FileIO namespace.
+            using (TextFieldParser parser = new TextFieldParser(Path.Combine(courseDir, "content.csv")))
+            {
+                parser.CommentTokens = new string[] { "#" };
+                parser.SetDelimiters(new string[] { "," });
+                parser.HasFieldsEnclosedInQuotes = true;
+
+                // Skip over header line.
+                parser.ReadLine();
+
+                while (!parser.EndOfData)
+                {
+                    string[] fields = parser.ReadFields();
+                    string file = fields[8];
+                    string url = fields[7];
+                    //if (Path.HasExtension(file) && Path.GetExtension(file) == ".html")
+                    //{
+                    //    string s = _futureleanCourse._client.DownloadString(url);
+                    //    byte[] pdfBuf = new SynchronizedPechkin(new GlobalConfig()).Convert(s);
+                        
+                    //    File.WriteAllBytes(file, pdfBuf);
+                    //    //FileStream fs = new FileStream(file, FileMode.Create);
+                    //    //fs.Write(pdfBuf, 0, pdfBuf.Length);
+                    //    //api/content/v1/parser?url=http://blog.readability.com/2011/02/step-up-be-heard-readability-ideas/&token=1b830931777ac7c2ac954e9f0d67df437175e66e
+                    //    //35aa55213619367d18118598984a4647a3d073dc
+                    //    string token = "35aa55213619367d18118598984a4647a3d073dc";
+                    //    string format = string.Format("http://www.readability.com/api/content/v1/parser?url={0}&token={1}", url, token);
+                    //    string downloadString = _futureleanCourse._client.DownloadString(format);
+                    //}
+                }
+            }
 
             //now download the actual content (video's, lecture notes, ...)
             foreach (Week week in courseContent.Weeks)
@@ -70,6 +113,9 @@ namespace courseradownloader
                 continue
                  */
 
+                //Filter the text stuff only
+
+
                 // add a numeric prefix to the week directory name to ensure
                 // chronological ordering
 
@@ -83,20 +129,23 @@ namespace courseradownloader
                 foreach (ClassSegment classSegment in week.ClassSegments)
                 {
                     //ensure chronological ordering
-                    string clsdirname = classSegment.ClassNum.ToString().PadLeft(2, '0') + " - " + classSegment.ClassName;
+                    string clsdirname = classSegment.ClassName;
 
                     //ensure the class dir exists
-                    string clsdir = Path.Combine(wkdir, clsdirname);
-                    Directory.CreateDirectory(clsdir);
+                    //string clsdir = Path.Combine(wkdir, clsdirname);
+                    //Directory.CreateDirectory(clsdir);
 
-                    Console.WriteLine(" - Downloading resources for " + classSegment.ClassName);
+                    Console.WriteLine(" - Downloading resources for " + clsdirname);
 
                     //download each resource
                     foreach (KeyValuePair<string, string> resourceLink in classSegment.ResourceLinks)
                     {
+                        //Filter here
+
+
                         try
                         {
-                            download(resourceLink.Key, clsdir, resourceLink.Value);
+                            download(resourceLink.Key, wkdir, resourceLink.Value);
                         }
                         catch (Exception e)
                         {
@@ -133,11 +182,11 @@ namespace courseradownloader
         {
             string fname = targetFname.RemoveColon();
 
-            //ensure it respects mppl
-            fname = _futureleanCourse.TrimPathPart(fname);
-
             string filepath = Path.Combine(targetDir, fname);
-            
+
+            //ensure it respects mppl
+            filepath = _futureleanCourse.TrimPathPart(filepath);
+
             //fname = Path.GetFileName(filepath);
 
             _futureleanCourse._client.DownloadFile(url, filepath);
