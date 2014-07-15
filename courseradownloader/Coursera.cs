@@ -308,39 +308,4 @@ namespace courseradownloader
         }
 
     }
-
-    internal interface IDownloader
-    {
-        void Download(string format, string targetDir, string targetFname);
-    }
-
-    internal abstract class Downloader
-    {
-    }
-
-    internal interface IMooc
-    {
-        Course GetDownloadableContent(string courseName);
-        void Login();
-    }
-
-    public static class Extensions
-    {
-        /// <summary>
-        /// Many class names have the following format: "Something really cool (12:34)"
-        /// If the class name has this format, replace the colon in the time with a hyphen.
-        /// </summary>
-        /// <param name="str">The string you want to remove the colon (":") from.</param>
-        /// <returns>The string with the colon replaced by a hyphen. ":" => "-"</returns>
-        public static string RemoveColon(this string str)
-        {
-
-            if (Regex.IsMatch(str, @".+\(\d?\d:\d\d\)"))
-            {
-                str = str.Replace(":", "-");
-            }
-            return str;
-        }
-
-    }  
 }
