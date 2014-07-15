@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using NReadability;
 using SevenZip;
 
 namespace courseradownloader
@@ -171,9 +173,91 @@ namespace courseradownloader
             //ensure it respects mppl
             filepath = _futureleanCourse.TrimPathPart(filepath);
 
-            //fname = Path.GetFileName(filepath);
+            WebHeaderCollection responseHeaders = _futureleanCourse._client.ResponseHeaders;
+            int contentLength = GetContentLength(responseHeaders);
+            bool isFileNeeded = IsFileNeeded(filepath, contentLength, fname);
 
-            _futureleanCourse._client.DownloadFile(url, filepath);
+            if (isFileNeeded)
+            {
+
+                if (Path.GetExtension(filepath) == ".html")
+                {
+                    string content = _futureleanCourse._client.DownloadString(url);
+                    NReadabilityTranscoder transcoder = new NReadabilityTranscoder();
+                    TranscodingInput tiInput = new TranscodingInput(content);
+                    TranscodingResult transcodedContent = transcoder.Transcode(tiInput);
+                        //.Transcode(content, out success);
+                    File.WriteAllText(filepath, transcodedContent.ExtractedContent);
+                }
+                else
+                {
+                    _futureleanCourse._client.DownloadFile(url, filepath);
+                }
+            }
+
         }
+
+        private bool IsFileNeeded(string filepath, int contentLength, string fname)
+        {
+            //split off the extension and check if we should skip it (remember to remove the leading .)
+            string ext = Path.GetExtension(fname);
+            if (!string.IsNullOrEmpty(ext) && _futureleanCourse.Ignorefiles != null && _futureleanCourse.Ignorefiles.Contains(ext))
+            {
+                Console.WriteLine("    - skipping \"{0}\" (extension ignored)", fname);
+                return false;
+            }
+
+            //Next check if it already exists and is unchanged
+            if (File.Exists(filepath))
+            {
+                if (contentLength > 0)
+                {
+                    FileInfo fileInfo = new FileInfo(filepath);
+                    long fs = fileInfo.Length;
+                    long delta = Math.Abs(contentLength - fs);
+
+                    // there are cases when a file was not completely downloaded or
+                    // something went wront that meant the file on disk is
+                    // unreadable. The file on disk my be smaller or larger (!) than
+                    // the reported content length in those cases.
+                    // Hence we overwrite the file if the reported content length is
+                    // different than what we have already by at least k bytes (arbitrary)
+
+                    //TODO: this is still not foolproof as the fundamental problem is that the content length cannot be trusted
+                    // so this really needs to be avoided and replaced by something
+                    // else, eg., explicitly storing what downloaded correctly
+
+                    if (delta > 10)
+                    {
+                        Console.WriteLine("    - \"{0}\" seems corrupt, downloading again", fname);
+                    }
+                    else
+                    {
+                        Console.WriteLine("    - \"{0}\" already exists, skipping", fname);
+                        return false;
+                    }
+                }
+                else
+                {
+                    // missing or invalid content length
+                    // assume all is ok... not much we can do
+                    return false;
+                }
+            }
+
+            //Detect renamed files
+            string shortn;
+            bool existing = FindRenamed(filepath, out shortn);
+
+            if (existing)
+            {
+                Console.WriteLine("    - \"{0}\" seems to be a copy of \"{1}\", renaming existing file", fname, shortn);
+                File.Move(shortn, filepath);
+                return false;
+            }
+
+            return true;
+        }
+
     }
 }

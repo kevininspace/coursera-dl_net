@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Web;
 using HtmlAgilityPack;
+using NReadability;
 
 namespace courseradownloader
 {
@@ -67,7 +68,7 @@ namespace courseradownloader
 
         protected string[] Wk_filter { get; set; }
 
-        protected IEnumerable<string> Ignorefiles { get; set; }
+        protected internal IEnumerable<string> Ignorefiles { get; set; }
 
         protected override string BASE_URL
         {
@@ -181,6 +182,8 @@ namespace courseradownloader
                                 }
                                 else
                                 {
+
+                                    
                                     resourceLinks.Add(BASE_URL + weekStepAnchorHref, Path.ChangeExtension(classname, "html")); // "index.html");
                                 }
 
