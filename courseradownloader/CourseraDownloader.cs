@@ -95,6 +95,10 @@ namespace courseradownloader
 
                 bool dl = IsFileNeeded(filepath, contentLength, fname);
 
+                filepath = Path.Combine(targetDir, fname);
+                //ensure it respects mppl
+                filepath = _courseraCourse.TrimPathPart(filepath);
+
                 if (dl)
                 {
                     try
@@ -203,10 +207,10 @@ namespace courseradownloader
 
             fname = fname.RemoveColon();
 
-            //ensure it respects mppl
-            fname = _courseraCourse.TrimPathPart(fname);
-
             string filepath = Path.Combine(targetDir, fname);
+
+            //ensure it respects mppl
+            filepath = _courseraCourse.TrimPathPart(filepath);
 
             return filepath;
         }

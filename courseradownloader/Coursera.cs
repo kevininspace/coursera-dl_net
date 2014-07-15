@@ -18,7 +18,6 @@ namespace courseradownloader
         private readonly WebConnectionStuff _webConnectionStuff;
         private string Parser;
         public IEnumerable<string> Ignorefiles;
-        private int Max_path_part_len;
         private bool Gzip_courses;
         private string[] Wk_filter;
 
