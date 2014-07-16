@@ -17,9 +17,9 @@ namespace courseradownloader
         private string Password;
         private readonly WebConnectionStuff _webConnectionStuff;
         private string Parser;
-        public IEnumerable<string> Ignorefiles;
         private bool Gzip_courses;
         private string[] Wk_filter;
+        public CookieAwareWebClient _client;
 
         string QUIZ_URL;
         string AUTH_URL;

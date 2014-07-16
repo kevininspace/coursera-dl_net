@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using NReadability;
 using Newtonsoft.Json.Linq;
 using SevenZip;
 
@@ -21,6 +22,7 @@ namespace courseradownloader
         public CourseraDownloader(Coursera coursera)
         {
             _courseraCourse = coursera;
+            Ignorefiles = _courseraCourse.Ignorefiles as List<string>;
         }
 
         /// <summary>
@@ -79,6 +81,38 @@ namespace courseradownloader
             return jObject;
         }
 
+        public void DownloadWithClient(string url, string targetDir, string targetFname)
+        {
+            string fname = targetFname.RemoveColon();
+
+            string filepath = Path.Combine(targetDir, fname);
+
+            //ensure it respects mppl
+            filepath = _courseraCourse.TrimPathPart(filepath);
+
+            WebHeaderCollection responseHeaders = _courseraCourse._client.ResponseHeaders;
+            int contentLength = GetContentLength(responseHeaders);
+            bool isFileNeeded = IsFileNeeded(filepath, contentLength, fname);
+
+            if (isFileNeeded)
+            {
+
+                if (Path.GetExtension(filepath) == ".html")
+                {
+                    string content = _courseraCourse._client.DownloadString(url);
+                    NReadabilityTranscoder transcoder = new NReadabilityTranscoder();
+                    TranscodingInput tiInput = new TranscodingInput(content);
+                    TranscodingResult transcodedContent = transcoder.Transcode(tiInput);
+                    //.Transcode(content, out success);
+                    File.WriteAllText(filepath, transcodedContent.ExtractedContent);
+                }
+                else
+                {
+                    _courseraCourse._client.DownloadFile(url, filepath);
+                }
+            }
+        }
+
         /// <summary>
         /// Download the url to the given filename
         /// </summary>
@@ -127,68 +161,7 @@ namespace courseradownloader
             }
         }
 
-        private bool IsFileNeeded(string filepath, int contentLength, string fname)
-        {
-            //split off the extension and check if we should skip it (remember to remove the leading .)
-            string ext = Path.GetExtension(fname);
-            if (!string.IsNullOrEmpty(ext) && _courseraCourse.Ignorefiles != null && _courseraCourse.Ignorefiles.Contains(ext))
-            {
-                Console.WriteLine("    - skipping \"{0}\" (extension ignored)", fname);
-                return false;
-            }
-
-            //Next check if it already exists and is unchanged
-            if (File.Exists(filepath))
-            {
-                if (contentLength > 0)
-                {
-                    FileInfo fileInfo = new FileInfo(filepath);
-                    long fs = fileInfo.Length;
-                    long delta = Math.Abs(contentLength - fs);
-
-                    // there are cases when a file was not completely downloaded or
-                    // something went wront that meant the file on disk is
-                    // unreadable. The file on disk my be smaller or larger (!) than
-                    // the reported content length in those cases.
-                    // Hence we overwrite the file if the reported content length is
-                    // different than what we have already by at least k bytes (arbitrary)
-
-                    //TODO: this is still not foolproof as the fundamental problem is that the content length cannot be trusted
-                    // so this really needs to be avoided and replaced by something
-                    // else, eg., explicitly storing what downloaded correctly
-
-                    if (delta > 10)
-                    {
-                        Console.WriteLine("    - \"{0}\" seems corrupt, downloading again", fname);
-                    }
-                    else
-                    {
-                        Console.WriteLine("    - \"{0}\" already exists, skipping", fname);
-                        return false;
-                    }
-                }
-                else
-                {
-                    // missing or invalid content length
-                    // assume all is ok... not much we can do
-                    return false;
-                }
-            }
-
-            //Detect renamed files
-            string shortn;
-            bool existing = FindRenamed(filepath, out shortn);
-
-            if (existing)
-            {
-                Console.WriteLine("    - \"{0}\" seems to be a copy of \"{1}\", renaming existing file", fname, shortn);
-                File.Move(shortn, filepath);
-                return false;
-            }
-
-            return true;
-        }
-
+      
         private string GetFilePath(string url, string targetDir, WebHeaderCollection responseHeaders)
         {
             //build the absolute path we are going to write to

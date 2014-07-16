@@ -14,6 +14,8 @@ namespace courseradownloader
         protected abstract string BASE_URL { get; }
         public abstract string HOME_URL { get; }
         protected abstract string LECTURE_URL { get; }
+        protected internal IEnumerable<string> Ignorefiles { get; set; }
+
 
         /// <summary>
         /// Given the name of a course, return the video lecture url
@@ -44,6 +46,7 @@ namespace courseradownloader
             return page;
         }
 
+        //TODO: Move this
         public virtual string TrimPathPart(string weekTopic)
         {
             //TODO: simple hack, something more elaborate needed

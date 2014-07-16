@@ -68,8 +68,6 @@ namespace courseradownloader
 
         protected string[] Wk_filter { get; set; }
 
-        protected internal IEnumerable<string> Ignorefiles { get; set; }
-
         protected override string BASE_URL
         {
             get { return "https://www.futurelearn.com/"; }
@@ -140,7 +138,7 @@ namespace courseradownloader
                             HtmlNode h3txt = weekDoc.DocumentNode.SelectSingleNode("//h3[contains(concat(' ', @class, ' '), ' headline ')]");
                             string weekTopic = util.sanitise_filename(h3txt.InnerText.Trim());
                             weekTopic = TrimPathPart(weekTopic);
-                            
+
                             Week weeklyContent = new Week(weekTopic);
                             weeklyContent.WeekNum = i++;
 
@@ -174,7 +172,7 @@ namespace courseradownloader
                                     HtmlDocument weekStepVideoDoc = new HtmlDocument();
                                     weekStepVideoDoc.LoadHtml(weekStepVideoPage);
                                     HtmlNode videoObject = weekStepVideoDoc.DocumentNode.SelectSingleNode("//source");
-                                        //"[contains(concat(' ', @name, ' '), ' flashvars ')]");
+                                    //"[contains(concat(' ', @name, ' '), ' flashvars ')]");
                                     string vidUrl = videoObject.Attributes["src"].Value;
 
                                     string fn = Path.ChangeExtension(classname, "mp4");
@@ -183,7 +181,7 @@ namespace courseradownloader
                                 else
                                 {
 
-                                    
+
                                     resourceLinks.Add(BASE_URL + weekStepAnchorHref, Path.ChangeExtension(classname, "html")); // "index.html");
                                 }
 
@@ -207,70 +205,6 @@ namespace courseradownloader
 
         public override void Login()
         {
-            //_webConnectionStuff.MakeHttpWebCall(LOGIN_URL);
-            //HttpWebResponse httpWebResponse = _webConnectionStuff.PostResponse;
-            //CookieContainer cookieContainer = _webConnectionStuff.CookieJar;
-
-            //string myStr;
-            //using (StreamReader reader = new StreamReader(httpWebResponse.GetResponseStream()))
-            //{
-            //    StreamReader sw = new StreamReader(reader.BaseStream);
-            //    myStr = sw.ReadToEnd();
-            //    // The string is currently stored in the 
-            //    // StreamWriters buffer. Flushing the stream will 
-            //    // force the string into the MemoryStream.
-            //    //sw.Flush();
-
-            //    // If we dispose the StreamWriter now, it will close 
-            //    // the BaseStream (which is our MemoryStream) which 
-            //    // will prevent us from reading from our MemoryStream
-            //    //DON'T DO THIS - sw.Dispose();
-
-            //    // The StreamReader will read from the current 
-            //    // position of the MemoryStream which is currently 
-            //    // set at the end of the string we just wrote to it. 
-            //    // We need to set the position to 0 in order to read 
-            //    // from the beginning.
-            //    //ms.Position = 0;
-            //    //var sr = new StreamReader(ms);
-            //    //myStr = sr.ReadToEnd();
-            //    //Console.WriteLine(myStr);
-            //}
-
-            //string tempFileName = Path.GetTempFileName();
-
-
-            ////Stream stringStream = new FileStream(tempFileName, FileMode.CreateNew);
-            ////httpWebResponse.GetResponseStream().CopyTo(stringStream);
-            ////stringStream.ToString();
-            ////string loginPage = get_page(LOGIN_URL);
-            //HtmlDocument htmlDoc = new HtmlDocument();
-            //htmlDoc.LoadHtml(myStr);
-
-            //string authenticity_token = "";
-            //if (htmlDoc.DocumentNode != null)
-            //{
-            //    //get the authenticity token from the login page
-            //    HtmlNode token = htmlDoc.DocumentNode.SelectNodes("//input[contains(concat(' ', @name, ' '), ' authenticity_token ')]").FirstOrDefault();
-            //    authenticity_token = token.Attributes["value"].Value;
-            //}
-
-            ////utf8=%E2%9C%93&authenticity_token=Il6RCc2oj8ndCPqvhnzVSZjp4FDrQWR79FBONHhvyUU%3D&uv_login=&return=&email=kevin.bourque%40gmail.com&password=%21rUkUS65w%24&button=
-            //// call the authenticator url
-            //StringBuilder postData = new StringBuilder();
-            //postData.Append("/utf8=%E2%9C%93&"); //UTF-8 checkmark
-            //postData.Append("authenticity_token=" + HttpUtility.UrlEncode(authenticity_token) + "&");
-            //postData.Append("uv_login=&return=&");
-            //postData.Append("email=" + HttpUtility.UrlEncode(Username) + "&");
-            //postData.Append("password=" + HttpUtility.UrlEncode(Password) + "&");
-            //postData.Append("remember_me=1&button=");
-
-            //UTF8Encoding utf8 = new UTF8Encoding();
-            //byte[] bytes = utf8.GetBytes(postData.ToString());
-
-
-            /*TEST
-             */
             CookieContainer cookieJar = new CookieContainer();
             _client = new CookieAwareWebClient(cookieJar);
             _client.Referer = LOGIN_URL;
@@ -287,8 +221,6 @@ namespace courseradownloader
             postData1.Append("email=" + HttpUtility.UrlEncode(Username) + "&");
             postData1.Append("password=" + HttpUtility.UrlEncode(Password) + "&");
             postData1.Append("remember_me=1&button=");
-            //string postData1 = string.Format("utf8=%E2%9C%93&authenticity_token={0}&user%5Blogin%5D=USERNAME&user%5Bpassword%5D=PASSWORD&user%5Boffset%5D=5.5&user%5Bremember_me%5D=0&button=", token);
-
 
             //WebClient.UploadValues is equivalent of Http url-encode type post
             _client.Method = "POST";
@@ -297,17 +229,10 @@ namespace courseradownloader
             //Now that we've logged in, set the Method back to "GET"
             _client.Method = "GET";
 
-            //Now get the goods (cookies should be set!
-
-
-            //i am getting invalid user/pass, but i am sure it will work fine with normal user/password
-
-
-            /*END TEST
-             */
+            //Now get the goods (cookies should be set!)
 
             /*
-             * FUTURELEARN RESPONSE
+             * EXAMPLE FUTURELEARN RESPONSE
              * cache-control:no-cache
              * cf-ray:1447a9f1151c053a-YYZ
              * content-type:text/html; charset=utf-8
@@ -327,22 +252,6 @@ namespace courseradownloader
              * x-ua-compatible:IE=edge
              * x-xss-protection:1; mode=block
              */
-
-            //Dictionary<string, string> newHeader = new Dictionary<string, string>
-            //{
-            //    {"set-cookie", csrfToken.Value}
-
-            //};
-
-            //Cookie crsfCookie = new Cookie("_csrf_token", csrfToken.Value, "/", ".futurelearn.com");
-            //Cookie sessionCookie = new Cookie("_future_learn_session", session.Value, "/", ".futurelearn.com");
-
-            //_webConnectionStuff.SetLoginCookie(LOGIN_URL, postData.ToString(), newHeader, csrfToken, new Uri("https://www.futurelearn.com"));
-
-
-            //File.Delete(tempFileName);
-
-            //_webConnectionStuff.MakeHttpWebCall(LOGIN_URL + postData, null, "POST", cookieContainer, true, bytes);
         }
 
         public override void Login(string s)
