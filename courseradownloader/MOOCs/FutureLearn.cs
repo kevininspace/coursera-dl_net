@@ -136,8 +136,8 @@ namespace courseradownloader
                             weekDoc.LoadHtml(weekPage);
 
                             HtmlNode h3txt = weekDoc.DocumentNode.SelectSingleNode("//h3[contains(concat(' ', @class, ' '), ' headline ')]");
-                            string weekTopic = util.sanitise_filename(h3txt.InnerText.Trim());
-                            weekTopic = TrimPathPart(weekTopic);
+                            string weekTopic = Utilities.sanitise_filename(h3txt.InnerText.Trim());
+                            weekTopic = Utilities.TrimPathPart(weekTopic, Max_path_part_len);
 
                             Week weeklyContent = new Week(weekTopic);
                             weeklyContent.WeekNum = i++;
@@ -146,7 +146,7 @@ namespace courseradownloader
                             int j = 1;
                             foreach (HtmlNode weekStep in weekSteps)
                             {
-                                util.DrawProgressBar(j, weekSteps.Count, 20, '=');
+                                Utilities.DrawProgressBar(j, weekSteps.Count, 20, '=');
 
                                 Dictionary<string, string> resourceLinks = new Dictionary<string, string>();
 
@@ -159,8 +159,8 @@ namespace courseradownloader
                                 string videoNumber = stepNumber.Trim().Split('.')[1].PadLeft(2, '0');
 
                                 stepName.RemoveColon();
-                                stepName = util.sanitise_filename(stepName);
-                                stepName = TrimPathPart(stepName);
+                                stepName = Utilities.sanitise_filename(stepName);
+                                stepName = Utilities.TrimPathPart(stepName, Max_path_part_len);
 
                                 string classname = string.Join("-", weekNumber, videoNumber, stepName);
 
@@ -203,7 +203,7 @@ namespace courseradownloader
             return null;
         }
 
-        public override void Login()
+        public override bool Login()
         {
             CookieContainer cookieJar = new CookieContainer();
             _client = new CookieAwareWebClient(cookieJar);
@@ -252,6 +252,8 @@ namespace courseradownloader
              * x-ua-compatible:IE=edge
              * x-xss-protection:1; mode=block
              */
+
+            return true;
         }
 
         public override void Login(string s)

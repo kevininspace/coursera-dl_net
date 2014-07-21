@@ -14,6 +14,9 @@
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
     <FileAlignment>512</FileAlignment>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">.\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -26,11 +29,8 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">.\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -54,7 +54,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="HtmlAgilityPack">
+    <Reference Include="HtmlAgilityPack, Version=1.4.6.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\HtmlAgilityPack.1.4.6\lib\Net40\HtmlAgilityPack.dll</HintPath>
     </Reference>
     <Reference Include="NDesk.Options">
@@ -79,6 +80,20 @@
       <HintPath>packages\Microsoft.Bcl.1.1.9\lib\net40\System.IO.dll</HintPath>
     </Reference>
     <Reference Include="System.Net" />
+    <Reference Include="System.Net.Http, Version=2.1.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Microsoft.Net.Http.2.1.10\lib\net40\System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Extensions">
+      <HintPath>packages\Microsoft.Net.Http.2.1.10\lib\net40\System.Net.Http.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Primitives">
+      <HintPath>packages\Microsoft.Net.Http.2.1.10\lib\net40\System.Net.Http.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.WebRequest, Version=2.1.10.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Microsoft.Net.Http.2.1.10\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime, Version=2.6.9.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>packages\Microsoft.Bcl.1.1.9\lib\net40\System.Runtime.dll</HintPath>
@@ -89,37 +104,38 @@
     </Reference>
     <Reference Include="System.Web" />
     <Reference Include="System.Xml" />
+    <Reference Include="YoutubeExtractor">
+      <HintPath>packages\YoutubeExtractor.0.10.1\lib\net35\YoutubeExtractor.dll</HintPath>
+    </Reference>
+    <Reference Include="Zlib.Portable">
+      <HintPath>packages\Zlib.Portable.1.9.2\lib\portable-net4+sl4+wp71+win8\Zlib.Portable.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Course.cs" />
-    <Compile Include="Coursera.cs" />
-    <Compile Include="CourseraDownloader.cs" />
-    <Compile Include="Downloader.cs" />
-    <Compile Include="FutureLearn.cs" />
-    <Compile Include="FutureLearnDownloader.cs" />
-    <Compile Include="IDownloader.cs" />
-    <Compile Include="IMooc.cs" />
-    <Compile Include="MOOC.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="util.cs" />
-    <Compile Include="WebConnectionStuff.cs">
+    <Compile Include="CookieAwareWebClient.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="Course.cs" />
+    <Compile Include="MOOCs\CookieContainerExtension.cs" />
+    <Compile Include="MOOCs\Coursera.cs" />
+    <Compile Include="MOOCs\CourseraDownloader.cs" />
+    <Compile Include="Downloader.cs" />
+    <Compile Include="MOOCs\Edx.cs" />
+    <Compile Include="MOOCs\FutureLearn.cs" />
+    <Compile Include="MOOCs\FutureLearnDownloader.cs" />
+    <Compile Include="IDownloader.cs" />
+    <Compile Include="MOOCs\IMooc.cs" />
+    <Compile Include="MOOCs\MOOC.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities.cs" />
+    <Compile Include="WebConnectionStuff.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
     <None Include="courseradownloader.py" />
-    <None Include="MANIFEST.in" />
     <None Include="packages.config" />
-    <None Include="README.md" />
-    <None Include="setup.py" />
     <None Include="util.py" />
-    <None Include="_version.py" />
-    <None Include="__init__.py" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0,Profile=Client">

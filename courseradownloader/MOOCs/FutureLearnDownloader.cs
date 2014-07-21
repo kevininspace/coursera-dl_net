@@ -172,7 +172,7 @@ namespace courseradownloader
             string filepath = Path.Combine(targetDir, fname);
 
             //ensure it respects mppl
-            filepath = _futureleanCourse.TrimPathPart(filepath);
+            filepath = Utilities.TrimPathPart(filepath, _futureleanCourse.Max_path_part_len);
 
             WebHeaderCollection responseHeaders = _futureleanCourse._client.ResponseHeaders;
             int contentLength = GetContentLength(responseHeaders);

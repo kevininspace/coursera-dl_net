@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using NDesk.Options;
+using courseradownloader.MOOCs;
 
 namespace courseradownloader
 {
@@ -19,7 +20,7 @@ namespace courseradownloader
         private static string dest_dir;
         private static string ignorefiles;
 
-        private static void Main(string[] args)
+        private static int Main(string[] args)
         {
             // parse the commandline arguments
             OptionSet optionSet = new OptionSet();
@@ -76,6 +77,7 @@ namespace courseradownloader
 
             Coursera coursera = null;
             FutureLearn futureLearn = null;
+            Edx edx = null;
             int i = 0;
             foreach (string courseName in course_names)
             {
@@ -106,6 +108,17 @@ namespace courseradownloader
                     case "udacity":
                         break;
                     case "edx":
+                        // instantiate the downloader class
+                        edx = new Edx(username, password, proxy, parser, ignorefiles, mppl, gzip_courses, wkfilter);
+                        // authenticate, need to get hold of the csrf token
+                        Console.WriteLine("Logging in as \"{0}\"...", username);
+                        if(!edx.Login())
+                        {
+                            return 1;
+                        }
+                        Course edxCourseContent = edx.GetDownloadableContent(courseLocationName[1]);
+                        edx.Courses.Add(edxCourseContent);
+                        Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
                         break;
                 }
                 i++;
@@ -126,6 +139,14 @@ namespace courseradownloader
                     futureLearn.Download(course.CourseName, dest_dir, false, gzip_courses, course);
                 }
             }
+            if (edx != null)
+            {
+                foreach (Course course in edx.Courses)
+                {
+                    edx.Download(course.CourseName, dest_dir, false, gzip_courses, course);
+                }
+            }
+            return 0;
         }
         /*
         private static object get_netrc_creds()

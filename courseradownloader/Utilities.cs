@@ -10,7 +10,7 @@ using System.Web;
 
 namespace courseradownloader
 {
-    public static class util
+    public static class Utilities
     {
         internal static void DrawProgressBar(int complete, int maxVal, int barSize, char progressCharacter)
         {
@@ -156,6 +156,27 @@ namespace courseradownloader
 
             // remove any illegal chars and return
             return sanitise_filename(fname);
+        }
+
+       public static string TrimPathPart(string weekTopic, int Max_path_part_len)
+        {
+            weekTopic = Regex.Replace(weekTopic, @"\s+", " ");
+            //TODO: simple hack, something more elaborate needed
+            if (Max_path_part_len != 0 && weekTopic.Length > Max_path_part_len)
+            {
+                if (Path.HasExtension(weekTopic))
+                {
+                    string extension = Path.GetExtension(weekTopic);
+                    string substring = weekTopic.Substring(0, Max_path_part_len - extension.Length - 2);
+                    return Path.ChangeExtension(substring, extension);
+                }
+
+                return weekTopic.Substring(0, Max_path_part_len);
+            }
+            else
+            {
+                return weekTopic;
+            }
         }
     }
 }

@@ -88,7 +88,7 @@ namespace courseradownloader
             string filepath = Path.Combine(targetDir, fname);
 
             //ensure it respects mppl
-            filepath = _courseraCourse.TrimPathPart(filepath);
+            filepath = Utilities.TrimPathPart(filepath, _courseraCourse.Max_path_part_len);
 
             WebHeaderCollection responseHeaders = _courseraCourse._client.ResponseHeaders;
             int contentLength = GetContentLength(responseHeaders);
@@ -131,7 +131,7 @@ namespace courseradownloader
 
                 filepath = Path.Combine(targetDir, fname);
                 //ensure it respects mppl
-                filepath = _courseraCourse.TrimPathPart(filepath);
+                filepath = Utilities.TrimPathPart(filepath, _courseraCourse.Max_path_part_len);
 
                 if (dl)
                 {
@@ -168,13 +168,13 @@ namespace courseradownloader
             string fname = null;
             try
             {
-                fname = util.filename_from_header(responseHeaders);
+                fname = Utilities.filename_from_header(responseHeaders);
             }
             finally
             {
                 if (string.IsNullOrEmpty(fname))
                 {
-                    fname = util.filename_from_url(url);
+                    fname = Utilities.filename_from_url(url);
                 }
             }
 
@@ -183,7 +183,7 @@ namespace courseradownloader
             string filepath = Path.Combine(targetDir, fname);
 
             //ensure it respects mppl
-            filepath = _courseraCourse.TrimPathPart(filepath);
+            filepath = Utilities.TrimPathPart(filepath, _courseraCourse.Max_path_part_len);
 
             return filepath;
         }

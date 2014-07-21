@@ -153,8 +153,8 @@ namespace courseradownloader
                             {
                                 h3txt = h3.InnerText.Trim();
                             }
-                            string weekTopic = util.sanitise_filename(h3txt);
-                            weekTopic = TrimPathPart(weekTopic);
+                            string weekTopic = Utilities.sanitise_filename(h3txt);
+                            weekTopic = Utilities.TrimPathPart(weekTopic, Max_path_part_len);
 
                             Week weeklyContent = new Week(weekTopic);
                             weeklyContent.WeekNum = i++;
@@ -167,7 +167,7 @@ namespace courseradownloader
                             int j = 0;
                             foreach (HtmlNode li in lis)
                             {
-                                util.DrawProgressBar(j, lis.Count, 20, '=');
+                                Utilities.DrawProgressBar(j, lis.Count, 20, '=');
 
                                 Dictionary<string, string> resourceLinks = new Dictionary<string, string>();
 
@@ -175,15 +175,15 @@ namespace courseradownloader
                                 string className = li.SelectSingleNode("a").InnerText.Trim();
 
                                 className.RemoveColon();
-                                className = util.sanitise_filename(className);
-                                className = TrimPathPart(className);
+                                className = Utilities.sanitise_filename(className);
+                                className = Utilities.TrimPathPart(className, Max_path_part_len);
 
                                 //collect all the resources for this class (ppt, pdf, mov, ..)
                                 HtmlNodeCollection classResources = li.SelectNodes("./div[contains(concat(' ', @class, ' '), ' course-lecture-item-resource ')]/a");
                                 foreach (HtmlNode classResource in classResources)
                                 {
                                     //get the hyperlink itself
-                                    string h = util.clean_url(classResource.GetAttributeValue("href", ""));
+                                    string h = Utilities.clean_url(classResource.GetAttributeValue("href", ""));
                                     if (string.IsNullOrEmpty(h))
                                     {
                                         continue;
@@ -207,7 +207,7 @@ namespace courseradownloader
                                 if (!containsMp4)
                                 {
                                     HtmlNode ll = li.SelectSingleNode("./a[contains(concat(' ', @class, ' '), ' lecture-link ')]");
-                                    string lurl = util.clean_url(ll.GetAttributeValue("data-modal-iframe", ""));
+                                    string lurl = Utilities.clean_url(ll.GetAttributeValue("data-modal-iframe", ""));
                                     try
                                     {
                                         //HttpWebResponse httpWebResponse = get_response(lurl);
@@ -234,7 +234,7 @@ namespace courseradownloader
                                         }
                                         else
                                         {
-                                            string vurl = util.clean_url(selectSingleNode.SelectSingleNode("src").OuterHtml);
+                                            string vurl = Utilities.clean_url(selectSingleNode.SelectSingleNode("src").OuterHtml);
 
                                             //build the matching filename
                                             string fn = Path.ChangeExtension(className, "mp4");
@@ -265,7 +265,7 @@ namespace courseradownloader
             return null;
         }
 
-        public override void Login()
+        public override bool Login()
         {
             throw new NotImplementedException();
         }

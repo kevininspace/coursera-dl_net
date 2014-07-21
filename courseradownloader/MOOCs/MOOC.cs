@@ -10,7 +10,7 @@ namespace courseradownloader
 {
     abstract class Mooc : IMooc
     {
-        protected int Max_path_part_len;
+        protected internal int Max_path_part_len;
         protected abstract string BASE_URL { get; }
         public abstract string HOME_URL { get; }
         protected abstract string LECTURE_URL { get; }
@@ -46,26 +46,7 @@ namespace courseradownloader
             return page;
         }
 
-        //TODO: Move this
-        public virtual string TrimPathPart(string weekTopic)
-        {
-            //TODO: simple hack, something more elaborate needed
-            if (Max_path_part_len != 0 && weekTopic.Length > Max_path_part_len)
-            {
-                if (Path.HasExtension(weekTopic))
-                {
-                    string extension = Path.GetExtension(weekTopic);
-                    string substring = weekTopic.Substring(0, Max_path_part_len - extension.Length);
-                    return Path.ChangeExtension(substring, extension);
-                }
 
-                return weekTopic.Substring(0, Max_path_part_len);
-            }
-            else
-            {
-                return weekTopic;
-            }
-        }
 
         internal static void MakeCourseList(Course courseContent, string courseDir)
         {
@@ -93,7 +74,8 @@ namespace courseradownloader
 
 
         public abstract Course GetDownloadableContent(string courseName);
-        public abstract void Login();
+        //public abstract void Login();
+        public abstract bool Login();
         public abstract void Login(string s);
         public abstract void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent);
     }
@@ -113,8 +95,20 @@ namespace courseradownloader
             {
                 str = str.Replace(":", "-");
             }
+
+            string invalid = new string(Path.GetInvalidFileNameChars()) + new string(Path.GetInvalidPathChars());
+
+            foreach (char c in invalid)
+            {
+                str = str.Replace(c.ToString(), "");
+            }
+            if (Regex.IsMatch(str, ":"))
+            {
+                str = str.Replace(":", "-");
+            }
+
             return str;
         }
 
-    }  
+    }
 }
