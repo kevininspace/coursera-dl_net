@@ -268,6 +268,7 @@ namespace courseradownloader
 
                     //ensure the class dir exists
                     string clsdir = Path.Combine(wkdir, clsdirname);
+                    clsdir = Utilities.TrimPathPart(clsdir, _courseraCourse.Max_path_part_len - 15);
                     Directory.CreateDirectory(clsdir);
 
                     Console.WriteLine(" - Downloading resources for " + classSegment.ClassName);

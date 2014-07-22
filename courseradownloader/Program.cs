@@ -41,23 +41,10 @@ namespace courseradownloader
 
             Console.WriteLine("Coursera-dl v{0} ({1})", Assembly.GetExecutingAssembly().GetName().Version, optionSet.GetType().ToString());
 
-            // check the parser
-            // search for login credentials in .netrc file if username hasn"t been
-            // provided in command-line args
             if (unparsedArgs.Contains("u"))
             {
-                /*object creds = get_netrc_creds();
-                if (creds == null)
-                {
-                    throw new Exception("No username passed and no .netrc credentials found (check a netrc file exists and has the correct permissions), unable to login");
-                }
-                else
-                {
-                    //TODO: Fix here
-                    ////username1 = creds.Username;
-                    ////password1 = creds.Password;
-                }
-                 */
+                Console.WriteLine("Please enter your username:");
+                password = Console.ReadLine();
             }
             else if (unparsedArgs.Contains("p")) // prompt the user for his password if not specified
             {
@@ -65,16 +52,15 @@ namespace courseradownloader
                 password = Console.ReadLine();
             }
 
-            // should we be trimming paths?
-            // TODO: this is a simple hack, something more elaborate needed
             //if mppl specified, always use that
             if (!unparsedArgs.Contains("mppl"))
             {
-                // if mppl is not specified on windows set manually
+                // if mppl is not specified set manually
                 mppl = 260;
                 Console.WriteLine("Maximum length of a path component set to {0}", mppl);
             }
 
+            List<IMooc> courseList = new List<IMooc>();
             Coursera coursera = null;
             FutureLearn futureLearn = null;
             Edx edx = null;
@@ -119,6 +105,8 @@ namespace courseradownloader
                         Course edxCourseContent = edx.GetDownloadableContent(courseLocationName[1]);
                         edx.Courses.Add(edxCourseContent);
                         Console.WriteLine("Course {0} of {1}", i + 1, course_names.Length);
+                        break;
+                    case "canvas":
                         break;
                 }
                 i++;

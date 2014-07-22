@@ -121,6 +121,7 @@
     <Compile Include="MOOCs\CourseraDownloader.cs" />
     <Compile Include="Downloader.cs" />
     <Compile Include="MOOCs\Edx.cs" />
+    <Compile Include="MOOCs\EdxDownloader.cs" />
     <Compile Include="MOOCs\FutureLearn.cs" />
     <Compile Include="MOOCs\FutureLearnDownloader.cs" />
     <Compile Include="IDownloader.cs" />

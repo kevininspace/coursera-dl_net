@@ -109,6 +109,7 @@ namespace courseradownloader
                 //ensure the week dir exists
                 Console.WriteLine(" - " + week.WeekName);
                 string wkdir = Path.Combine(courseDir, wkdirname);
+
                 Directory.CreateDirectory(wkdir);
 
                 foreach (ClassSegment classSegment in week.ClassSegments)
