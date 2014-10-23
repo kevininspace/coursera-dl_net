@@ -8,7 +8,7 @@ namespace courseradownloader
 {
     public class CookieAwareWebClient : WebClient
     {
-        public string Method;
+        public string Method { get; set; }
         public CookieContainer CookieContainer { get; set; }
         public Uri Uri { get; set; }
         public string Referer { get; set; }

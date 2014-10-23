@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace courseradownloader
 {
@@ -134,9 +135,18 @@ namespace courseradownloader
 
         private static CookieCollection IterateOverCookies(HttpWebResponse response)
         {
+            string setCookie = response.Headers.Get("Set-Cookie");
+            string[] strings = setCookie.Split(';');
+            string name = strings.FirstOrDefault(s => s.StartsWith("name"));
+            string value = strings.FirstOrDefault(s => s.StartsWith("name"));
+            string path = strings.FirstOrDefault(s => s.ToLower().StartsWith("path="));
+            IEnumerable<bool> enumerable = strings.Select(s => s.StartsWith("Do"));
+            string domain = strings.FirstOrDefault(s => s.ToLower().StartsWith("domain="));
+            cookiejar.Add(new Cookie());
+
             //=====
             //Cookie cookie2 = response.Cookies[0];
-            string s = response.Headers.Get("Set-Cookie");
+            //string s = response.Headers.Get("Set-Cookie");
             string[] allCookies = response.Headers.AllKeys; //.Get("cookie");
             foreach (string allCookie in allCookies)
             {
@@ -344,20 +354,247 @@ namespace courseradownloader
                 postResponse = (HttpWebResponse)postRequest.GetResponse();
             }
 
-            CookieCollection iterateOverCookies = IterateOverCookies(postResponse);
-
-            foreach (Cookie responseCookie in iterateOverCookies)
-            {
-                localCookieJar.Add(responseCookie);
-            }
-
-
-
+            CookieCollection allCookiesFromHeader = GetAllCookiesFromHeader(postResponse.Headers.Get("Set-Cookie"), null);
+            localCookieJar.Add(allCookiesFromHeader);
             CookieJar = localCookieJar;
+            //CookieCollection iterateOverCookies = IterateOverCookies(postResponse);
+
+            //foreach (Cookie responseCookie in iterateOverCookies)
+            //{
+            //    localCookieJar.Add(responseCookie);
+            //}
+
             PostResponse = postResponse;
         }
 
         public CookieContainer CookieJar { get; set; }
         public HttpWebResponse PostResponse { get; set; }
+
+        private static void FindDomainCookies(WebHeaderCollection headers)
+        {
+            for (int i = 0; i < headers.Count; i++)
+            {
+                if ("Set-Cookie" == headers.Keys[i])
+                {
+                    string rawCookie = headers[i];
+                    
+                    if (rawCookie.Contains(","))
+                    {
+                        //regexp for Date format per RFC http://www.w3.org/Protocols/rfc2109/rfc2109 Wdy, DD-Mon-YY HH:MM:SS GMT
+
+                        string dateRegExp = @"(?<day>expires=[A-Z,a-z]{3}),(?<date>\s\d{2}-[A-Z,a-z]{3}-\d{4}\s\d{2}:\d{2}:\d{2}\sgmt)";
+                        
+                        string replaceDateExp = @"${day}${date}";
+
+                        rawCookie = Regex.Replace(rawCookie, dateRegExp, replaceDateExp, RegexOptions.IgnoreCase);
+                    }
+                    
+                    string[] multipleCookies = rawCookie.Split(new char[] { ',' });
+                    
+                    for (int j = 0; j < multipleCookies.Length; j++)
+                    {
+                        Cookie cookie = new Cookie();
+                        
+                        string[] cookieValues = multipleCookies[j].Split(new char[] { ';' });
+                        string[] paramNameVale;
+                        
+                        foreach (string param in cookieValues)
+                        {
+                            paramNameVale = param.Trim().Split(new char[] { '=' });
+                            paramNameVale[0] = paramNameVale[0].ToLower();
+
+                            if (paramNameVale[0] == "domain")
+                            {
+                                cookie.Domain = param.Split(new char[] {'='})[1];
+                            }
+                                
+                            else if (paramNameVale[0] == "expires")
+                            {
+                                string date = paramNameVale[1];
+                                
+                                //Date format per RFC http://www.w3.org/Protocols/rfc2109/rfc2109 Wdy, DD-Mon-YY HH:MM:SS GMT
+                                date = Regex.Replace(date, @"(?<day>(sun mon tue wed thu fri sat))", @"${day},", RegexOptions.IgnoreCase);
+                                
+                                cookie.Expires = Convert.ToDateTime(date);
+                            }
+
+                            else if (paramNameVale[0] == "path")
+                            {
+                                cookie.Path = paramNameVale[1];
+                            }
+                        }
+
+                        cookieValues[0] = cookieValues[0].Trim();
+                        cookie.Name = cookieValues[0].Split(new char[] { '=' })[0];
+                        cookie.Value = cookieValues[0].Split(new char[] { '=' })[1];
+                        
+                        cookiejar.Add(cookie);
+                        //if (cookie.Domain.ToLower().Contains("live"))
+                        //    liveCookies.Add(cookie);
+                        //else if (cookie.Domain.ToLower().Contains("msn"))
+                        //    msnCookies.Add(cookie);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// http://snipplr.com/view.php?codeview&id=4427
+        /// </summary>
+        /// <param name="strHeader"></param>
+        /// <param name="strHost"></param>
+        /// <returns></returns>
+        public static CookieCollection GetAllCookiesFromHeader(string strHeader, string strHost)
+        {
+            ArrayList al = new ArrayList();
+            CookieCollection cc = new CookieCollection();
+            if (strHeader != string.Empty)
+            {
+                al = ConvertCookieHeaderToArrayList(strHeader);
+                cc = ConvertCookieArraysToCookieCollection(al, strHost);
+            }
+            return cc;
+        }
+
+        /// <summary>
+        /// http://snipplr.com/view.php?codeview&id=4427
+        /// </summary>
+        /// <param name="strCookHeader"></param>
+        /// <returns></returns>
+        private static ArrayList ConvertCookieHeaderToArrayList(string strCookHeader)
+        {
+            strCookHeader = strCookHeader.Replace("\r", "");
+            strCookHeader = strCookHeader.Replace("\n", "");
+            string[] strCookTemp = strCookHeader.Split(',');
+            ArrayList al = new ArrayList();
+            int i = 0;
+            int n = strCookTemp.Length;
+            while (i < n)
+            {
+                if (strCookTemp[i].IndexOf("expires=", StringComparison.OrdinalIgnoreCase) > 0)
+                {
+                    al.Add(strCookTemp[i] + "," + strCookTemp[i + 1]);
+                    i = i + 1;
+                }
+                else
+                {
+                    al.Add(strCookTemp[i]);
+                }
+                i = i + 1;
+            }
+            return al;
+        }
+
+        /// <summary>
+        /// http://snipplr.com/view.php?codeview&id=4427
+        /// </summary>
+        /// <param name="al"></param>
+        /// <param name="strHost"></param>
+        /// <returns></returns>
+        private static CookieCollection ConvertCookieArraysToCookieCollection(ArrayList al, string strHost)
+        {
+            CookieCollection cc = new CookieCollection();
+
+            int alcount = al.Count;
+            string strEachCook;
+            string[] strEachCookParts;
+            for (int i = 0; i < alcount; i++)
+            {
+                strEachCook = al[i].ToString();
+                strEachCookParts = strEachCook.Split(';');
+                int intEachCookPartsCount = strEachCookParts.Length;
+                string strCNameAndCValue = string.Empty;
+                string strPNameAndPValue = string.Empty;
+                string strDNameAndDValue = string.Empty;
+                string[] NameValuePairTemp;
+                Cookie cookTemp = new Cookie();
+
+                for (int j = 0; j < intEachCookPartsCount; j++)
+                {
+                    if (j == 0)
+                    {
+                        strCNameAndCValue = strEachCookParts[j];
+                        if (strCNameAndCValue != string.Empty)
+                        {
+                            int firstEqual = strCNameAndCValue.IndexOf("=");
+                            string firstName = strCNameAndCValue.Substring(0, firstEqual);
+                            string allValue = strCNameAndCValue.Substring(firstEqual + 1, strCNameAndCValue.Length - (firstEqual + 1));
+                            cookTemp.Name = firstName;
+                            cookTemp.Value = allValue;
+                        }
+                        continue;
+                    }
+                    if (strEachCookParts[j].IndexOf("path", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        strPNameAndPValue = strEachCookParts[j];
+                        if (strPNameAndPValue != string.Empty)
+                        {
+                            NameValuePairTemp = strPNameAndPValue.Split('=');
+                            if (NameValuePairTemp[1] != string.Empty)
+                            {
+                                cookTemp.Path = NameValuePairTemp[1];
+                            }
+                            else
+                            {
+                                cookTemp.Path = "/";
+                            }
+                        }
+                        continue;
+                    }
+
+                    if (strEachCookParts[j].IndexOf("domain", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        strPNameAndPValue = strEachCookParts[j];
+                        if (strPNameAndPValue != string.Empty)
+                        {
+                            NameValuePairTemp = strPNameAndPValue.Split('=');
+
+                            if (NameValuePairTemp[1] != string.Empty)
+                            {
+                                cookTemp.Domain = NameValuePairTemp[1];
+                            }
+                            else
+                            {
+                                cookTemp.Domain = strHost;
+                            }
+                        }
+                        continue;
+                    }
+
+                    if (strEachCookParts[j].IndexOf("expires", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        strPNameAndPValue = strEachCookParts[j];
+                        if (strPNameAndPValue != string.Empty)
+                        {
+                            NameValuePairTemp = strPNameAndPValue.Split('=');
+
+                            if (NameValuePairTemp[1] != string.Empty)
+                            {
+                                DateTime expiry;
+                                //DateTime.ParseExact("24-okt-08 21:09:06 CEST".Replace("CEST", "+2"), "dd-MMM-yy HH:mm:ss z", culture);
+                                bool tryParse = DateTime.TryParse(NameValuePairTemp[1].Replace("CEST", "+2"), out expiry);
+                                cookTemp.Expires = expiry;
+                            }
+                            else
+                            {
+                                cookTemp.Domain = strHost;
+                            }
+                        }
+                        continue;
+                    }
+                }
+
+                if (cookTemp.Path == string.Empty)
+                {
+                    cookTemp.Path = "/";
+                }
+                if (cookTemp.Domain == string.Empty)
+                {
+                    cookTemp.Domain = strHost;
+                }
+                cc.Add(cookTemp);
+            }
+            return cc;
+        }
     }
 }

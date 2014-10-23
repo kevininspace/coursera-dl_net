@@ -197,8 +197,12 @@ namespace courseradownloader
                                     }
                                     else
                                     {
-                                        //Dont set a filename here, that will be inferred from the week titles
-                                        resourceLinks.Add(h, className);
+                                        if (!resourceLinks.ContainsKey(h))
+                                        {
+
+                                            //Dont set a filename here, that will be inferred from the week titles
+                                            resourceLinks.Add(h, className);
+                                        }
                                     }
                                 }
 
@@ -285,18 +289,29 @@ namespace courseradownloader
             postData.Append("?email=" + HttpUtility.UrlEncode(Username1) + "&");
             postData.Append("password=" + HttpUtility.UrlEncode(Password1) + "&");
             postData.Append("webrequest=true");
-            Cookie cookieToken = _webConnectionStuff.GetCookieToken(LectureUrlFromName(s), "csrf_token");
+            _webConnectionStuff.MakeHttpWebCall("https://accounts.coursera.org/signin"); //.GetCookieToken("https://accounts.coursera.org/signin", "csrf_token"); //LectureUrlFromName(s)
 
-            Dictionary<string, string> newHeader = new Dictionary<string, string>
-            {
-                {"X-CSRFToken", cookieToken.Value}
-            };
+            //_webConnectionStuff.CookieJar.GetCookies(new Uri("https://accounts.coursera.org/signin"));
+
+            //Dictionary<string, string> newHeader = new Dictionary<string, string>
+            //{
+            //    {"X-CSRFToken", "test"} // cookieToken.Value}
+            //};
             
-            Cookie crsfCookie = new Cookie("csrftoken", cookieToken.Value, "/", ".coursera.org");
+            //Cookie crsfCookie = new Cookie("csrftoken", "test" /*cookieToken.Value*/, "/", ".coursera.org");
 
-            _webConnectionStuff.SetLoginCookie(LOGIN_URL, postData.ToString(), newHeader, crsfCookie, new Uri("https://class.coursera.org"));
+            //_webConnectionStuff.SetLoginCookie(LOGIN_URL, postData.ToString(), newHeader, crsfCookie, new Uri("https://class.coursera.org"));
 
-            _webConnectionStuff.Login(LectureUrlFromName(s), LOGIN_URL, postData.ToString());
+            //TODO: Check this method for lecturename
+            //_webConnectionStuff.Login(LectureUrlFromName(s), LOGIN_URL, postData.ToString());
+
+            //CookieContainer cookieJar = new CookieContainer();
+            _client = new CookieAwareWebClient(_webConnectionStuff.CookieJar);
+            _client.Referer = LOGIN_URL;
+            _client.Method = "POST";
+
+            // the website sets some cookie that is needed for login, and as well the 'authenticity_token' is always different
+            string response = _client.DownloadString(LOGIN_URL + postData.ToString());
         }
 
         public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)

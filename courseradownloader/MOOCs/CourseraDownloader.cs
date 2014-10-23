@@ -283,7 +283,7 @@ namespace courseradownloader
                         catch (Exception e)
                         {
                             Console.WriteLine("   - failed: {0}, {1}", resourceLink.Key, e.Message);
-                            throw e;
+                            //throw e;
                         }
                     }
 
