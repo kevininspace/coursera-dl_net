@@ -20,7 +20,14 @@ namespace courseradownloader
 
         public CookieAwareWebClient(CookieContainer cookies)
         {
-            this.CookieContainer = cookies;
+            if (cookies == null)
+            {
+                this.CookieContainer = new CookieContainer();
+            }
+            else
+            {
+                this.CookieContainer = cookies;
+            }
         }
 
         protected override WebRequest GetWebRequest(Uri address)
@@ -64,22 +71,24 @@ namespace courseradownloader
 
             String setCookieHeader = response.Headers[HttpResponseHeader.SetCookie];
 
-            if (setCookieHeader != null)
-            {
-                //do something if needed to parse out the cookie.
-                try
-                {
+            CookieCollection allCookiesFromHeader = WebConnectionStuff.GetAllCookiesFromHeader(setCookieHeader, null);
+            CookieContainer.Add(allCookiesFromHeader);
+            //if (setCookieHeader != null)
+            //{
+            //    //do something if needed to parse out the cookie.
+            //    try
+            //    {
 
-                    Cookie cookie = new Cookie();
-                    //create cookie
-                    this.CookieContainer.Add(cookie);
+            //        Cookie cookie = new Cookie();
+            //        //create cookie
+            //        this.CookieContainer.Add(cookie);
 
-                }
-                catch (Exception)
-                {
+            //    }
+            //    catch (Exception)
+            //    {
 
-                }
-            }
+            //    }
+            //}
             return response;
 
         }

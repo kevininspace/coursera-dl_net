@@ -116,7 +116,8 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Course.cs" />
-    <Compile Include="MOOCs\CookieContainerExtension.cs" />
+    <Compile Include="CookieContainerExtension.cs" />
+    <Compile Include="MOOCs\Copy of Coursera.cs" />
     <Compile Include="MOOCs\Coursera.cs" />
     <Compile Include="MOOCs\CourseraDownloader.cs" />
     <Compile Include="Downloader.cs" />

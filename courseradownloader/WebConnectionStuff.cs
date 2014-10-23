@@ -240,7 +240,9 @@ namespace courseradownloader
 
                 webResponse.Close();
 
-                CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(loginUrl));
+                CookieCollection cookieCollection = IterateOverCookies(webResponse);
+
+                //CookieCollection cookieCollection = cookiejar.GetCookies(new Uri(loginUrl));
                 cookie = cookieCollection[cookieToken];
 
                 if (cookie == null)

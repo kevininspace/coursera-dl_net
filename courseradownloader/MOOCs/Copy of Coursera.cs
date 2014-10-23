@@ -10,7 +10,7 @@ using HtmlAgilityPack;
 
 namespace courseradownloader
 {
-    class Coursera : Mooc
+    class CourseraBkup : Mooc
     {
 
         private string Username;
@@ -27,7 +27,7 @@ namespace courseradownloader
         string LOGIN_URL = "https://accounts.coursera.org/api/v1/login";
         public string ABOUT_URL = "https://www.coursera.org/maestro/api/topic/information?topic-id={0}";
 
-        public Coursera(string username, string password, string proxy, string parser, string ignorefiles, int mppl, bool gzipCourses, string wkfilter)
+        public CourseraBkup(string username, string password, string proxy, string parser, string ignorefiles, int mppl, bool gzipCourses, string wkfilter)
         {
             AUTH_URL = BASE_URL + "/auth/auth_redirector?type=login&subtype=normal";
             QUIZ_URL = BASE_URL + "/quiz/index";
@@ -291,7 +291,7 @@ namespace courseradownloader
             postData.Append("?email=" + HttpUtility.UrlEncode(Username1) + "&");
             postData.Append("password=" + HttpUtility.UrlEncode(Password1) + "&");
             postData.Append("webrequest=true");
-            //_client = new CookieAwareWebClient(_webConnectionStuff.CookieJar);
+            _client = new CookieAwareWebClient(_webConnectionStuff.CookieJar);
             _client.Referer = LOGIN_URL;
             _client.Method = "POST";
             string response1 = _client.DownloadString(LOGIN_URL + postData.ToString());
@@ -324,8 +324,8 @@ namespace courseradownloader
         public override void Download(string courseName, string destDir, bool b, bool gzipCourses, Course courseContent)
         {
             MakeCourseList(courseContent, Path.Combine(destDir, courseName));
-            CourseraDownloader cd = new CourseraDownloader(this);
-            cd.DownloadCourse(courseName, destDir, b, gzipCourses, courseContent);
+            //CourseraDownloader cd = new CourseraDownloader(this);
+            //cd.DownloadCourse(courseName, destDir, b, gzipCourses, courseContent);
             
         }
 
